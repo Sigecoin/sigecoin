@@ -1,0 +1,2 @@
+# sigecoin
+cryptocurrency
