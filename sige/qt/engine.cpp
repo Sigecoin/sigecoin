@@ -2,12 +2,9 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include "config/sigconfig.h"
-#endif
+#include "engine.h"
 
 #include "sigecoingui.h"
-
 #include "chainparams.h"
 #include "clientmodel.h"
 #include "guiconstants.h"
@@ -25,21 +22,17 @@
 
 #include "init.h"
 #include "rpc/server.h"
-#include "scheduler.h"
 #include "uinterface.h"
 #include "util.h"
 #include "warnings.h"
 
-#ifdef ENABLE_WALLET
+#if (ENABLE_WALLET==1)
 #include "wallet/wallet.h"
 #endif
-
-#include <stdint.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/thread.hpp>
 
-#include <QApplication>
 #include <QDebug>
 #include <QLibraryInfo>
 #include <QLocale>
@@ -162,107 +155,18 @@ void DebugMessageHandler(QtMsgType type, const QMessageLogContext& context, cons
 }
 #endif
 
-/** Class encapsulating Sigecoin startup and shutdown.
- * Allows running startup and shutdown in a different thread from the UI thread.
- */
-class SigecoinEngine: public QObject
-{
-    Q_OBJECT
-public:
-    explicit SigecoinEngine();
-
-public Q_SLOTS:
-    void initialize();
-    void shutdown();
-
-Q_SIGNALS:
-    void initializeResult(int retval);
-    void shutdownResult(int retval);
-    void runawayException(const QString &message);
-
-private:
-    boost::thread_group threadGroup;
-    CScheduler scheduler;
-
-    /// Pass fatal exception message to UI thread
-    void handleRunawayException(const std::exception *e);
-};
-
-/** Main Sigecoin application object */
-class SigecoinApplication: public QApplication
-{
-    Q_OBJECT
-public:
-    explicit SigecoinApplication(int &argc, char **argv);
-    ~SigecoinApplication();
-
-#ifdef ENABLE_WALLET
-    /// Create payment server
-    void createPaymentServer();
-#endif
-    /// parameter interaction/setup based on rules
-    void parameterSetup();
-    /// Create options model
-    void createOptionsModel(bool resetSettings);
-    /// Create main window
-    void createWindow(const NetworkStyle *networkStyle);
-    /// Create splash screen
-    void createSplashScreen(const NetworkStyle *networkStyle);
-
-    /// Request core initialization
-    void requestInitialize();
-    /// Request core shutdown
-    void requestShutdown();
-
-    /// Get process return value
-    int getReturnValue() { return returnValue; }
-
-    /// Get window identifier of QMainWindow (SigecoinGUI)
-    WId getMainWinId() const;
-
-public Q_SLOTS:
-    void initializeResult(int retval);
-    void shutdownResult(int retval);
-    /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
-    void handleRunawayException(const QString &message);
-
-Q_SIGNALS:
-    void requestedInitialize();
-    void requestedShutdown();
-    void stopThread();
-    void splashFinished(QWidget *window);
-
-private:
-    QThread *coreThread;
-    OptionsModel *optionsModel;
-    ClientModel *clientModel;
-    SigecoinGUI *window;
-    QTimer *pollShutdownTimer;
-#ifdef ENABLE_WALLET
-    PaymentServer* paymentServer;
-    WalletModel *walletModel;
-#endif
-    int returnValue;
-    const PlatformStyle *platformStyle;
-    std::unique_ptr<QWidget> shutdownWindow;
-
-    void startThread();
-};
-
-#include "sigecoin.moc"
-
-SigcoinEngine::SigcoinEngine():
+SigecoinEngine::SigecoinEngine():
     QObject()
 {
 }
 
-void SigcoinEngine::handleRunawayException(const std::exception *e)
+void SigecoinEngine::handleRunawayException(const std::exception *e)
 {
     PrintExceptionContinue(e, "Runaway exception");
     Q_EMIT runawayException(QString::fromStdString(GetWarnings("gui")));
 }
 
-void SigcoinEngine::initialize()
+void SigecoinEngine::initialize()
 {
     try
     {
@@ -291,7 +195,7 @@ void SigcoinEngine::initialize()
     }
 }
 
-void SigcoinEngine::shutdown()
+void SigecoinEngine::shutdown()
 {
     try
     {
@@ -392,7 +296,7 @@ void SigecoinApplication::startThread()
     if(coreThread)
         return;
     coreThread = new QThread(this);
-    SigcoinEngine *executor = new SigcoinEngine();
+    SigecoinEngine *executor = new SigecoinEngine();
     executor->moveToThread(coreThread);
 
     /*  communication to and from thread */
@@ -544,7 +448,7 @@ int main(int argc, char *argv[])
 #endif
 
     Q_INIT_RESOURCE(sigecoin);
-    Q_INIT_RESOURCE(sigecoin_locale);
+    //Q_INIT_RESOURCE(sigecoin_locale);
 
     SigecoinApplication app(argc, argv);
 #if QT_VERSION > 0x050100
@@ -633,7 +537,7 @@ int main(int argc, char *argv[])
     PaymentServer::ipcParseCommandLine(argc, argv);
 #endif
 
-    QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(QString::fromStdString(Params().NetworkIDString())));
+    QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(NetworkType2String(Params().GetNetworkType()).c_str()));
     assert(!networkStyle.isNull());
     // Allow for separate UI settings for testnets
     QApplication::setApplicationName(networkStyle->getAppName());
