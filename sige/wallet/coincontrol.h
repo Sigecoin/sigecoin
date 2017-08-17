@@ -6,6 +6,7 @@
 #define __wallet_coin_control_h__
 
 #include "primitives/transaction.h"
+#include "txdestination.h"
 
 /** Coin Control Features. */
 class CCoinControl

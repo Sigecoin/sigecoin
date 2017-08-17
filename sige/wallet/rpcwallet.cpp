@@ -2720,7 +2720,7 @@ UniValue bumpfee(const JSONRPCRequest& request)
             "2. options               (object, optional)\n"
             "   {\n"
             "     \"confTarget\"        (numeric, optional) Confirmation target (in blocks)\n"
-            "     \"totalFee\"          (numeric, optional) Total fee (NOT feerate) to pay, in satoshis.\n"
+            "     \"totalFee\"          (numeric, optional) Total fee (NOT feerate) to pay, in siges.\n"
             "                         In rare cases, the actual fee paid might be slightly higher than the specified\n"
             "                         totalFee if the tx change output has to be removed because it is too close to\n"
             "                         the dust threshold.\n"
@@ -2880,7 +2880,7 @@ UniValue bumpfee(const JSONRPCRequest& request)
         // walletIncrementalRelayFee.GetFeePerK() should be exact, because it's initialized
         // in that unit (fee per kb).
         // However, nOldFeeRate is a calculated value from the tx fee/size, so
-        // add 1 satoshi to the result, because it may have been rounded down.
+        // add 1 sige to the result, because it may have been rounded down.
         if (nNewFeeRate.GetFeePerK() < nOldFeeRate.GetFeePerK() + 1 + walletIncrementalRelayFee.GetFeePerK()) {
             nNewFeeRate = CFeeRate(nOldFeeRate.GetFeePerK() + 1 + walletIncrementalRelayFee.GetFeePerK());
             nNewFee = nNewFeeRate.GetFee(maxNewTxSize);

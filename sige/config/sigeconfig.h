@@ -9,7 +9,7 @@
 #define CLIENT_VERSION_BUILD 1
 
 /* Version is release */
-#define CLIENT_VERSION_IS_RELEASE false
+#define CLIENT_VERSION_IS_RELEASE true
 
 /* Major version */
 #define CLIENT_VERSION_MAJOR 1
@@ -20,14 +20,8 @@
 /* Build revision */
 #define CLIENT_VERSION_REVISION 0
 
-/* Copyright holder(s) before %s replacement */
-#define COPYRIGHT_HOLDERS "The SGC developers"
-
 /* Copyright holder(s) */
-#define COPYRIGHT_HOLDERS_FINAL "SIGE developer"
-
-/* Replacement for %s in copyright holders string */
-#define COPYRIGHT_HOLDERS_SUBSTITUTION "Sigecoin"
+#define COPYRIGHT_HOLDERS_FINAL "Sigecoin inc"
 
 /* Copyright year */
 #define COPYRIGHT_YEAR 2017
@@ -296,10 +290,10 @@
 #define PACKAGE_BUGREPORT "https://github.com/sigecoin/issues"
 
 /* Define to the full name of this package. */
-#define PACKAGE_NAME "SigNode"
+#define PACKAGE_NAME "Sigecoin"
 
 /* Define to the full name and version of this package. */
-#define PACKAGE_STRING "SigNode 1.0.0"
+#define PACKAGE_STRING "Sigecoin Node 1.0.0"
 
 /* Define to the one symbol short name of this package. */
 #define PACKAGE_TARNAME "sigecoin"
@@ -336,7 +330,7 @@
 /* #undef USE_DBUS */
 
 /* Define if QR support should be compiled in */
-#define USE_QRCODE 1
+#define USE_QRCODE 0
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

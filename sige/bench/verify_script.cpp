@@ -56,7 +56,7 @@ static void VerifyScriptBench(benchmark::State& state)
     // Keypair.
     CKey key;
     const unsigned char vchKey[32] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
-    key.Set(vchKey, vchKey + 32, false);
+    key.SetBinary(vchKey, vchKey + 32, false);
     CPubKey pubkey = key.GetPubKey();
     uint160 pubkeyHash;
     CHash160().Write(pubkey.begin(), pubkey.size()).Finalize(pubkeyHash.begin());
@@ -85,17 +85,6 @@ static void VerifyScriptBench(benchmark::State& state)
             &err);
         assert(err == SCRIPT_ERR_OK);
         assert(success);
-
-#if defined(HAVE_CONSENSUS_LIB)
-        CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
-        stream << txSpend;
-        int csuccess = sigcoinconsensus_verify_script_with_amount(
-            txCredit.vout[0].scriptPubKey.data(),
-            txCredit.vout[0].scriptPubKey.size(),
-            txCredit.vout[0].nValue,
-            (const unsigned char*)stream.data(), stream.size(), 0, flags, nullptr);
-        assert(csuccess == 1);
-#endif
     }
 }
 

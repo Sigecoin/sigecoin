@@ -26,9 +26,9 @@
 #include "util.h"
 #include "warnings.h"
 
-#if (ENABLE_WALLET==1)
+//#if (ENABLE_WALLET==1)
 #include "wallet/wallet.h"
-#endif
+//#endif
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/thread.hpp>
@@ -112,7 +112,7 @@ static void initTranslations(QTranslator &qtTranslatorBase, QTranslator &qtTrans
 
     // Get desired locale (e.g. "de_DE")
     // 1) System default language
-    QString lang_territory = GetLangTerritory();
+    QString lang_territory = "eu_ES"/*GetLangTerritory()*/;
 
     // Convert to "de" only by truncating "_DE"
     QString lang = lang_territory;
@@ -219,10 +219,10 @@ SigecoinApplication::SigecoinApplication(int &argc, char **argv):
     clientModel(0),
     window(0),
     pollShutdownTimer(0),
-#ifdef ENABLE_WALLET
+//#ifdef ENABLE_WALLET
     paymentServer(0),
     walletModel(0),
-#endif
+//#endif
     returnValue(0)
 {
     setQuitOnLastWindowClosed(false);
@@ -250,22 +250,20 @@ SigecoinApplication::~SigecoinApplication()
 
     delete window;
     window = 0;
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     delete paymentServer;
     paymentServer = 0;
-#endif
+// #endif
     delete optionsModel;
     optionsModel = 0;
     delete platformStyle;
     platformStyle = 0;
 }
 
-#ifdef ENABLE_WALLET
 void SigecoinApplication::createPaymentServer()
 {
     paymentServer = new PaymentServer(this);
 }
-#endif
 
 void SigecoinApplication::createOptionsModel(bool resetSettings)
 {
@@ -338,11 +336,11 @@ void SigecoinApplication::requestShutdown()
     window->setClientModel(0);
     pollShutdownTimer->stop();
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     window->removeAllWallets();
     delete walletModel;
     walletModel = 0;
-#endif
+// #endif
     delete clientModel;
     clientModel = 0;
 
@@ -361,15 +359,15 @@ void SigecoinApplication::initializeResult(int retval)
     {
         // Log this only after AppInit2 finishes, as then logging setup is guaranteed complete
         qWarning() << "Platform customization:" << platformStyle->getName();
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         PaymentServer::LoadRootCAs();
         paymentServer->setOptionsModel(optionsModel);
-#endif
+// #endif
 
         clientModel = new ClientModel(optionsModel);
         window->setClientModel(clientModel);
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         if(pwalletMain)
         {
             walletModel = new WalletModel(platformStyle, pwalletMain, optionsModel);
@@ -380,7 +378,7 @@ void SigecoinApplication::initializeResult(int retval)
             connect(walletModel, SIGNAL(coinsSent(CWallet*,SendCoinsRecipient,QByteArray)),
                              paymentServer, SLOT(fetchPaymentACK(CWallet*,const SendCoinsRecipient&,QByteArray)));
         }
-#endif
+// #endif
 
         // If -min option passed, start window minimized.
         if(GetBoolArg("-min", false))
@@ -393,7 +391,7 @@ void SigecoinApplication::initializeResult(int retval)
         }
         Q_EMIT splashFinished(window);
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         // Now that initialization/startup is done, process any command-line
         // sigecoin: URIs or payment requests:
         connect(paymentServer, SIGNAL(receivedPaymentRequest(SendCoinsRecipient)),
@@ -403,7 +401,7 @@ void SigecoinApplication::initializeResult(int retval)
         connect(paymentServer, SIGNAL(message(QString,QString,unsigned int)),
                          window, SLOT(message(QString,QString,unsigned int)));
         QTimer::singleShot(100, paymentServer, SLOT(uiReady()));
-#endif
+// #endif
     } else {
         quit(); // Exit main loop
     }
@@ -481,7 +479,7 @@ int main(int argc, char *argv[])
     QApplication::setOrganizationName(QAPP_ORG_NAME);
     QApplication::setOrganizationDomain(QAPP_ORG_DOMAIN);
     QApplication::setApplicationName(QAPP_APP_NAME_DEFAULT);
-    GUIUtil::SubstituteFonts(GetLangTerritory());
+    GUIUtil::SubstituteFonts(/*GetLangTerritory()*/ "eu_ES");
 
     /// 4. Initialization of translations, so that intro dialog is in user's language
     // Now that QSettings are accessible, initialize translations
@@ -532,10 +530,10 @@ int main(int argc, char *argv[])
         QMessageBox::critical(0, QObject::tr(PACKAGE_NAME), QObject::tr("Error: %1").arg(e.what()));
         return EXIT_FAILURE;
     }
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     // Parse URIs on command line -- this can affect Params()
     PaymentServer::ipcParseCommandLine(argc, argv);
-#endif
+// #endif
 
     QScopedPointer<const NetworkStyle> networkStyle(NetworkStyle::instantiate(NetworkType2String(Params().GetNetworkType()).c_str()));
     assert(!networkStyle.isNull());
@@ -544,7 +542,7 @@ int main(int argc, char *argv[])
     // Re-initialize translations after changing application name (language in network-specific settings can be different)
     initTranslations(qtTranslatorBase, qtTranslator, translatorBase, translator);
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     /// 8. URI IPC sending
     // - Do this early as we don't want to bother initializing if we are just calling IPC
     // - Do this *after* setting up the data directory, as the data directory hash is used in the name
@@ -557,7 +555,7 @@ int main(int argc, char *argv[])
     // Start up the payment server early, too, so impatient users that click on
     // sigecoin: links repeatedly have their payment requests routed to this process:
     app.createPaymentServer();
-#endif
+// #endif
 
     /// 9. Main GUI initialization
     // Install global event filter that makes sure that long tooltips can be word-wrapped
@@ -603,4 +601,4 @@ int main(int argc, char *argv[])
     }
     return app.getReturnValue();
 }
-#endif // SIGE_QT_TEST
+#endif 

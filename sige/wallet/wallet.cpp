@@ -44,11 +44,11 @@ bool bSpendZeroConfChange = DEFAULT_SPEND_ZEROCONF_CHANGE;
 bool fSendFreeTransactions = DEFAULT_SEND_FREE_TRANSACTIONS;
 bool fWalletRbf = DEFAULT_WALLET_RBF;
 
-const char * DEFAULT_WALLET_DAT = "wallet.dat";
+const char * DEFAULT_WALLET_DAT = "wallet.mdb";
 const uint32_t BIP32_HARDENED_KEY_LIMIT = 0x80000000;
 
 /**
- * Fees smaller than this (in satoshi) are considered zero fee (for transaction creation)
+ * Fees smaller than this (in siges) are considered zero fee (for transaction creation)
  * Override with -mintxfee
  */
 CFeeRate CWallet::minTxFee = CFeeRate(DEFAULT_TRANSACTION_MINFEE);
@@ -592,7 +592,6 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
 
         if (!EncryptKeys(vMasterKey))
         {
-            // ###### ここに来たら異常終了しちゃわない??
             if (m_fFileBacked) {
                 m_pwalletdbEncryption->TxnAbort();
                 delete m_pwalletdbEncryption;
@@ -3134,14 +3133,13 @@ CWallet* CWallet::CreateWalletFromFile(const std::string walletFile)
         }
     }
 
-    // ※初期値より下がることは無い.
     if (GetBoolArg("-upgradewallet", fFirstRun))
     {
         int nMaxVersion = GetArg("-upgradewallet", 0);
         if (nMaxVersion == 0) // the -upgradewallet without argument case
         {
             LogPrintf("Performing wallet upgrade to %i\n", FEATURE_LATEST);
-            nMaxVersion = CLIENT_VERSION; // 0.13.99.0 = 139900
+            nMaxVersion = CLIENT_VERSION; 
             walletInstance->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
         }
         else

@@ -11,6 +11,6 @@
 
 #include <boost/filesystem/path.hpp>
 
-boost::filesystem::path GetTempPath();
+boost::filesystem::path GetTestTempPath();
 
 #endif  /* __sig_test_util_h__ */

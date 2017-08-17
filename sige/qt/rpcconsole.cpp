@@ -17,17 +17,18 @@
 
 #include "chainparams.h"
 #include "netbase.h"
+#include "util.h"
+
 #include "rpc/server.h"
 #include "rpc/client.h"
-#include "util.h"
+#include <include/univalue.h>
 
 #include <openssl/crypto.h>
 
-#include <univalue.h>
 
-#ifdef ENABLE_WALLET
-#include <db_cxx.h>
-#endif
+// #ifdef ENABLE_WALLET
+// #include <db_cxx.h>
+// #endif
 
 #include <QKeyEvent>
 #include <QMenu>
@@ -78,41 +79,6 @@ const QStringList historyFilter = QStringList()
 
 }
 
-/* Object for executing console RPC commands in a separate thread.
-*/
-class RPCExecutor : public QObject
-{
-    Q_OBJECT
-
-public Q_SLOTS:
-    void request(const QString &command);
-
-Q_SIGNALS:
-    void reply(int category, const QString &command);
-};
-
-/** Class for handling RPC timers
- * (used for e.g. re-locking the wallet after a timeout)
- */
-class QtRPCTimerBase: public QObject, public RPCTimerBase
-{
-    Q_OBJECT
-public:
-    QtRPCTimerBase(boost::function<void(void)>& _func, int64_t millis):
-        func(_func)
-    {
-        timer.setSingleShot(true);
-        connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
-        timer.start(millis);
-    }
-    ~QtRPCTimerBase() {}
-private Q_SLOTS:
-    void timeout() { func(); }
-private:
-    QTimer timer;
-    boost::function<void(void)> func;
-};
-
 class QtRPCTimerInterface: public RPCTimerInterface
 {
 public:
@@ -125,7 +91,7 @@ public:
 };
 
 
-#include "rpcconsole.moc"
+//#include "moc_rpcconsole.cpp"
 
 /**
  * Split shell command line into a list of arguments and optionally execute the command(s).
@@ -438,12 +404,12 @@ RPCConsole::RPCConsole(const PlatformStyle *_platformStyle, QWidget *parent) :
     connect(ui->btnClearTrafficGraph, SIGNAL(clicked()), ui->trafficGraph, SLOT(clear()));
 
     // set library version labels
-#ifdef ENABLE_WALLET
-    ui->berkeleyDBVersion->setText(DbEnv::version(0, 0, 0));
-#else
-    ui->label_berkeleyDBVersion->hide();
-    ui->berkeleyDBVersion->hide();
-#endif
+// #ifdef ENABLE_WALLET
+    ui->berkeleyDBVersion->setText("5.8.0"/*DbEnv::version(0, 0, 0)*/);
+// #else
+//    ui->label_berkeleyDBVersion->hide();
+//      ui->berkeleyDBVersion->hide();
+// #endif
     // Register RPC timer interface
     rpcTimerInterface = new QtRPCTimerInterface();
     // avoid accidentally overwriting an existing, non QTThread
@@ -618,7 +584,7 @@ void RPCConsole::setClientModel(ClientModel *model)
         ui->clientUserAgent->setText(model->formatSubVersion());
         ui->dataDir->setText(model->dataDir());
         ui->startupTime->setText(model->formatClientStartupTime());
-        ui->networkName->setText(QString::fromStdString(Params().NetworkIDString()));
+        ui->networkName->setText(NetworkType2String(Params().GetNetworkType()).c_str());
 
         //Setup autocomplete and attach it
         QStringList wordList;

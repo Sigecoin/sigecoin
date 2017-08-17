@@ -9,9 +9,9 @@
 #include "validation.h"
 #include "rpc/register.h"
 #include "rpc/server.h"
-#include "rpcconsole.h"
+#include "qt/rpcconsole.h"
 #include "test/testutil.h"
-#include "univalue.h"
+#include "include/univalue.h"
 #include "util.h"
 
 #include <QDir>

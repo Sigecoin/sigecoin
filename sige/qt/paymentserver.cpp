@@ -8,10 +8,10 @@
 #include "guiutil.h"
 #include "optionsmodel.h"
 
-#include "base58.h"
+#include "sigaddress.h"
 #include "chainparams.h"
 #include "policy/policy.h"
-#include "ui_interface.h"
+#include "uinterface.h"
 #include "util.h"
 #include "wallet/wallet.h"
 
@@ -55,8 +55,6 @@ const char* BIP70_MESSAGE_PAYMENTREQUEST = "PaymentRequest";
 const char* BIP71_MIMETYPE_PAYMENT = "application/sigecoin-payment";
 const char* BIP71_MIMETYPE_PAYMENTACK = "application/sigecoin-paymentack";
 const char* BIP71_MIMETYPE_PAYMENTREQUEST = "application/sigecoin-paymentrequest";
-// BIP70 max payment request size in bytes (DoS protection)
-const qint64 BIP70_MAX_PAYMENTREQUEST_SIZE = 50000;
 
 struct X509StoreDeleter {
       void operator()(X509_STORE* b) {
@@ -220,15 +218,15 @@ void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
             SendCoinsRecipient r;
             if (GUIUtil::parseSigecoinURI(arg, &r) && !r.address.isEmpty())
             {
-                CSigAddress address(r.address.toStdString());
+                CSigAddress address(base58string(r.address.toStdString()));
 
-                if (address.IsValid(Params(CBaseChainParams::MAIN)))
+                if (address.IsValid(Params(NETWORK_MAIN)))
                 {
-                    SelectParams(CBaseChainParams::MAIN);
+                    SelectParams(NETWORK_MAIN);
                 }
-                else if (address.IsValid(Params(CBaseChainParams::TESTNET)))
+                else if (address.IsValid(Params(NETWORK_TESTNET)))
                 {
-                    SelectParams(CBaseChainParams::TESTNET);
+                    SelectParams(NETWORK_TESTNET);
                 }
             }
         }
@@ -241,11 +239,11 @@ void PaymentServer::ipcParseCommandLine(int argc, char* argv[])
             {
                 if (request.getDetails().network() == "main")
                 {
-                    SelectParams(CBaseChainParams::MAIN);
+                    SelectParams(NETWORK_MAIN);
                 }
                 else if (request.getDetails().network() == "test")
                 {
-                    SelectParams(CBaseChainParams::TESTNET);
+                    SelectParams(NETWORK_TESTNET);
                 }
             }
         }
@@ -441,7 +439,7 @@ void PaymentServer::handleURIOrFile(const QString& s)
             SendCoinsRecipient recipient;
             if (GUIUtil::parseSigecoinURI(s, &recipient))
             {
-                CSigAddress address(recipient.address.toStdString());
+                CSigAddress address(base58string(recipient.address.toStdString()));
                 if (!address.IsValid()) {
                     Q_EMIT message(tr("URI handling"), tr("Invalid payment address %1").arg(recipient.address),
                         CClientUIInterface::MSG_ERROR);
@@ -560,7 +558,7 @@ bool PaymentServer::processPaymentRequest(const PaymentRequestPlus& request, Sen
         CTxDestination dest;
         if (ExtractDestination(sendingTo.first, dest)) {
             // Append destination address
-            addresses.append(QString::fromStdString(CSigAddress(dest).ToString()));
+            addresses.append(dest.GetBase58addressWithNetworkPrefix().c_str());
         }
         else if (!recipient.authenticatedMerchant.isEmpty()) {
             // Unauthenticated payment requests to custom sigecoin addresses are not supported
@@ -762,12 +760,13 @@ void PaymentServer::handlePaymentACK(const QString& paymentACKMsg)
 
 bool PaymentServer::verifyNetwork(const payments::PaymentDetails& requestDetails)
 {
-    bool fVerified = requestDetails.network() == Params().NetworkIDString();
+    std::string strNetworkType = NetworkType2String(Params().GetNetworkType());
+    bool fVerified = requestDetails.network() == strNetworkType;
     if (!fVerified) {
         qWarning() << QString("PaymentServer::%1: Payment request network \"%2\" doesn't match client network \"%3\".")
             .arg(__func__)
             .arg(QString::fromStdString(requestDetails.network()))
-            .arg(QString::fromStdString(Params().NetworkIDString()));
+            .arg(QString::fromStdString(strNetworkType));
     }
     return fVerified;
 }

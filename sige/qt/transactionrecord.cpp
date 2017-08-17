@@ -4,7 +4,7 @@
 
 #include "transactionrecord.h"
 
-#include "base58.h"
+#include "sigaddress.h"
 #include "consensus/consensus.h"
 #include "validation.h"
 #include "timedata.h"
@@ -62,7 +62,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 {
                     // Received by Sigecoin Address
                     sub.type = TransactionRecord::RecvWithAddress;
-                    sub.address = CSigAddress(address).ToString();
+                    sub.address = address.GetBase58addressWithNetworkPrefix().c_str();
                 }
                 else
                 {
@@ -134,7 +134,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 {
                     // Sent to Sigecoin Address
                     sub.type = TransactionRecord::SendToAddress;
-                    sub.address = CSigAddress(address).ToString();
+                    sub.address = address.GetBase58addressWithNetworkPrefix().c_str();
                 }
                 else
                 {

@@ -826,7 +826,7 @@ void ThreadFlushWalletDB()
 
                         // Flush wallet file so it's self contained
                         bitdb.CloseDb(strFile);
-                        bitdb.CheckpointLSN(strFile);
+                        //bitdb.CheckpointLSN(strFile);
 
                         bitdb.mapFileUseCount.erase(_mi++);
                         LogPrint("db", "Flushed %s %dms\n", strFile, GetTimeMillis() - nStart);

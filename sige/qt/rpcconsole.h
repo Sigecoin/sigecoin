@@ -157,4 +157,42 @@ private:
     void updateNetworkState();
 };
 
+/* Object for executing console RPC commands in a separate thread.
+*/
+class RPCExecutor : public QObject
+{
+    Q_OBJECT
+
+public Q_SLOTS:
+    void request(const QString &command);
+
+Q_SIGNALS:
+    void reply(int category, const QString &command);
+};
+
+#include "rpc/server.h"
+#include <QTimer>
+
+/** Class for handling RPC timers
+ * (used for e.g. re-locking the wallet after a timeout)
+ */
+class QtRPCTimerBase: public QObject, public RPCTimerBase
+{
+    Q_OBJECT
+public:
+    QtRPCTimerBase(boost::function<void(void)>& _func, int64_t millis):
+        func(_func)
+    {
+        timer.setSingleShot(true);
+        connect(&timer, SIGNAL(timeout()), this, SLOT(timeout()));
+        timer.start(millis);
+    }
+    ~QtRPCTimerBase() {}
+private Q_SLOTS:
+    void timeout() { func(); }
+private:
+    QTimer timer;
+    boost::function<void(void)> func;
+};
+
 #endif // SIGE_QT_RPCCONSOLE_H

@@ -4,7 +4,8 @@
 
 #include "paymentservertests.h"
 
-#include "optionsmodel.h"
+#include "qt/optionsmodel.h"
+#include "chainparamsbase.h"
 #include "paymentrequestdata.h"
 
 #include "amount.h"
@@ -62,9 +63,11 @@ static SendCoinsRecipient handleRequest(PaymentServer* server, std::vector<unsig
     return sigCatcher.recipient;
 }
 
+extern void SelectParams(NetworkType network);
+
 void PaymentServerTests::paymentServerTests()
 {
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(NETWORK_MAIN);
     OptionsModel optionsModel;
     PaymentServer* server = new PaymentServer(NULL, false);
     X509_STORE* caStore = X509_STORE_new();

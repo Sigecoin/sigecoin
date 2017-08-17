@@ -85,11 +85,6 @@ list(
 	"${EVENT_STAGE_NAME}"
 	EVENT__STAGE_RET
 )
-if (EVENT__STAGE_RET EQUAL -1)
-	message(WARNING
-		"stage ${EVENT_STAGE_NAME} is not allowed, reset to beta")
-	set(EVENT_STAGE_NAME beta)
-endif()
 
 set(EVENT_VERSION
 	"${EVENT_VERSION_MAJOR}.${EVENT_VERSION_MINOR}.${EVENT_VERSION_PATCH}-${EVENT_STAGE_NAME}")

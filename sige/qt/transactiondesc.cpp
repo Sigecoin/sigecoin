@@ -9,7 +9,7 @@
 #include "paymentserver.h"
 #include "transactionrecord.h"
 
-#include "base58.h"
+#include "sigaddress.h"
 #include "consensus/consensus.h"
 #include "validation.h"
 #include "script/script.h"
@@ -51,7 +51,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
 {
     QString strHTML;
 
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     strHTML.reserve(4000);
     strHTML += "<html><font face='verdana, arial, helvetica, sans-serif'>";
 
@@ -91,9 +91,9 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
         if (nNet > 0)
         {
             // Credit
-            if (CSigAddress(rec->address).IsValid())
+            if (CSigAddress(base58string(rec->address)).IsValid())
             {
-                CTxDestination address = CSigAddress(rec->address).Get();
+                CTxDestination address = CSigAddress(base58string(rec->address)).Get();
                 if (wallet->mapAddressBook.count(address))
                 {
                     strHTML += "<b>" + tr("From") + ":</b> " + tr("unknown") + "<br>";
@@ -118,7 +118,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
         // Online transaction
         std::string strAddress = wtx.mapValue["to"];
         strHTML += "<b>" + tr("To") + ":</b> ";
-        CTxDestination dest = CSigAddress(strAddress).Get();
+        CTxDestination dest = CSigAddress(base58string(strAddress)).Get();
         if (wallet->mapAddressBook.count(dest) && !wallet->mapAddressBook[dest].name.empty())
             strHTML += GUIUtil::HtmlEscape(wallet->mapAddressBook[dest].name) + " ";
         strHTML += GUIUtil::HtmlEscape(strAddress) + "<br>";
@@ -189,7 +189,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
                         strHTML += "<b>" + tr("To") + ":</b> ";
                         if (wallet->mapAddressBook.count(address) && !wallet->mapAddressBook[address].name.empty())
                             strHTML += GUIUtil::HtmlEscape(wallet->mapAddressBook[address].name) + " ";
-                        strHTML += GUIUtil::HtmlEscape(CSigAddress(address).ToString());
+                        strHTML += GUIUtil::HtmlEscape(QString(address.GetBase58addressWithNetworkPrefix().c_str()));
                         if(toSelf == ISMINE_SPENDABLE)
                             strHTML += " (own address)";
                         else if(toSelf & ISMINE_WATCH_ONLY)
@@ -305,7 +305,7 @@ QString TransactionDesc::toHTML(CWallet *wallet, CWalletTx &wtx, TransactionReco
                     {
                         if (wallet->mapAddressBook.count(address) && !wallet->mapAddressBook[address].name.empty())
                             strHTML += GUIUtil::HtmlEscape(wallet->mapAddressBook[address].name) + " ";
-                        strHTML += QString::fromStdString(CSigAddress(address).ToString());
+                        strHTML += address.GetBase58addressWithNetworkPrefix().c_str();
                     }
                     strHTML = strHTML + " " + tr("Amount") + "=" + SigecoinUnits::formatHtmlWithUnit(unit, vout.nValue);
                     strHTML = strHTML + " IsMine=" + (wallet->IsMine(vout) & ISMINE_SPENDABLE ? tr("true") : tr("false")) + "</li>";

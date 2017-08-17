@@ -612,7 +612,7 @@ bool TryCreateDirectory(const boost::filesystem::path& p)
 {
     try
     {
-        return boost::filesystem::create_directory(p);
+        return boost::filesystem::create_directories(p);
     } catch (const boost::filesystem::filesystem_error&) {
         if (!boost::filesystem::exists(p) || !boost::filesystem::is_directory(p))
             throw;
@@ -826,11 +826,5 @@ int GetNumCores()
 
 std::string CopyrightHolders(const std::string& strPrefix)
 {
-    std::string strCopyrightHolders = strPrefix + strprintf(_(COPYRIGHT_HOLDERS), _(COPYRIGHT_HOLDERS_SUBSTITUTION));
-
-    // Check for untranslated substitution to make sure Sigecoin copyright is not removed by accident
-    if (strprintf(COPYRIGHT_HOLDERS, COPYRIGHT_HOLDERS_SUBSTITUTION).find("Sigecoin") == std::string::npos) {
-        strCopyrightHolders += "\n" + strPrefix + "SIGE developer";
-    }
-    return strCopyrightHolders;
+    return strPrefix + COPYRIGHT_HOLDERS_FINAL;
 }

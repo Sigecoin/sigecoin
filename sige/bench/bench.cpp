@@ -65,6 +65,16 @@ benchmark::BenchRunner::RunAll(double elapsedTimeForOne)
     perf_fini();
 }
 
+// precompilation bug with <algorithm> macros and numeric_limits::max
+
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 bool benchmark::State::KeepRunning()
 {
     if (count & countMask) {

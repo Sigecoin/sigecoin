@@ -7,9 +7,6 @@
 
 #include "config/sigeconfig.h"
 
-//! Set to true for release, false for prerelease or test build
-#define CLIENT_VERSION_IS_RELEASE false
-
 /**
  * Copyright year (2017-this)
  * Todo: update this when changing our copyright comments in the source
@@ -24,7 +21,7 @@
 #define DO_STRINGIZE(X) #X
 
 //! Copyright string used in Windows .rc files
-#define COPYRIGHT_STR "2009-" STRINGIZE(COPYRIGHT_YEAR) " " COPYRIGHT_HOLDERS_FINAL
+#define COPYRIGHT_STR " " STRINGIZE(COPYRIGHT_YEAR) " " COPYRIGHT_HOLDERS_FINAL
 
 /**
  * sigenode-res.rc includes this file, but it cannot cope with real c++ code.

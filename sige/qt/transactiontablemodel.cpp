@@ -81,7 +81,7 @@ public:
         qDebug() << "TransactionTablePriv::refreshWallet";
         cachedWallet.clear();
         {
-            LOCK2(cs_main, wallet->cs_wallet);
+            LOCK2(cs_main, wallet->m_walletCriticalSection);
             for(std::map<uint256, CWalletTx>::iterator it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); ++it)
             {
                 if(TransactionRecord::showTransaction(it->second))
@@ -130,7 +130,7 @@ public:
             }
             if(showTransaction)
             {
-                LOCK2(cs_main, wallet->cs_wallet);
+                LOCK2(cs_main, wallet->m_walletCriticalSection);
                 // Find transaction in wallet
                 std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(hash);
                 if(mi == wallet->mapWallet.end())
@@ -193,7 +193,7 @@ public:
             TRY_LOCK(cs_main, lockMain);
             if(lockMain)
             {
-                TRY_LOCK(wallet->cs_wallet, lockWallet);
+                TRY_LOCK(wallet->m_walletCriticalSection, lockWallet);
                 if(lockWallet && rec->statusUpdateNeeded())
                 {
                     std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(rec->hash);
@@ -212,7 +212,7 @@ public:
     QString describe(TransactionRecord *rec, int unit)
     {
         {
-            LOCK2(cs_main, wallet->cs_wallet);
+            LOCK2(cs_main, wallet->m_walletCriticalSection);
             std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(rec->hash);
             if(mi != wallet->mapWallet.end())
             {
@@ -224,7 +224,7 @@ public:
 
     QString getTxHex(TransactionRecord *rec)
     {
-        LOCK2(cs_main, wallet->cs_wallet);
+        LOCK2(cs_main, wallet->m_walletCriticalSection);
         std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(rec->hash);
         if(mi != wallet->mapWallet.end())
         {

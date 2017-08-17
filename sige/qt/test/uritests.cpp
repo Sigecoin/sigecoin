@@ -4,8 +4,8 @@
 
 #include "uritests.h"
 
-#include "guiutil.h"
-#include "walletmodel.h"
+#include "qt/guiutil.h"
+#include "qt/walletmodel.h"
 
 #include <QUrl>
 

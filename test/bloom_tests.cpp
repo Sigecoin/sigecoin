@@ -234,6 +234,7 @@ BOOST_AUTO_TEST_CASE(merkle_block_2)
     stream >> block;
 
     CBloomFilter filter(10, 0.000001, 0, BLOOM_UPDATE_ALL);
+
     // Match the first transaction
     filter.insert(uint256S("0xe980fe9f792d014e73b95203dc1335c5f9ce19ac537a419e6df5b47aecb93b70"));
 

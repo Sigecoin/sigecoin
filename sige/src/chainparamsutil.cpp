@@ -58,7 +58,7 @@ CBlock CChainParamsUtil::CreateGenesisBlock(
     const CAmount& genesisReward
 )
 {
-    const char* pszTimestamp = "The Times 03/Jan/2009 Chancellor on brink of second bailout for banks";
-    const CScript genesisOutputScript = CScript() << ParseHex("04678afdb0fe5548271967f1a67130b7105cd6a828e03909a67962e0ea1f61deb649f6bc3f4cef38c4f35504e51ec112de5c384df7ba0b8d578a4c702b6bf11d5f") << OP_CHECKSIG;
+    const char* pszTimestamp = "The Times 8/Aug/2017 SigeCoin";
+    const CScript genesisOutputScript = CScript() << ParseHex("044da964cf87340153f2005486ceda1023b87ec0125ef9d407fa95f02032cb86a5eb5e56842e927ad9bcf4b398746f945063aab84af5df84bc6d5018adc0ed533f") << OP_CHECKSIG;
     return _CreateGenesisBlockImpl(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }

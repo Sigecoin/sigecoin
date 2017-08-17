@@ -19,6 +19,8 @@ class NetworkStyle;
 class SigecoinGUI;
 class ClientModel;
 class OptionsModel;
+class PaymentServer;
+class WalletModel;
 
 QT_BEGIN_NAMESPACE
 class QThread;
@@ -28,6 +30,8 @@ QT_END_NAMESPACE
 /** Class encapsulating Sigecoin startup and shutdown.
  * Allows running startup and shutdown in a different thread from the UI thread.
  */
+
+
 class SigecoinEngine: public QObject
 {
     Q_OBJECT
@@ -59,10 +63,10 @@ public:
     explicit SigecoinApplication(int &argc, char **argv);
     ~SigecoinApplication();
 
-#ifdef ENABLE_WALLET
+//#ifdef ENABLE_WALLET
     /// Create payment server
     void createPaymentServer();
-#endif
+//#endif
     /// parameter interaction/setup based on rules
     void parameterSetup();
     /// Create options model
@@ -101,10 +105,10 @@ private:
     ClientModel *clientModel;
     SigecoinGUI *window;
     QTimer *pollShutdownTimer;
-#ifdef ENABLE_WALLET
+//#ifdef ENABLE_WALLET
     PaymentServer* paymentServer;
     WalletModel *walletModel;
-#endif
+//#endif
     int returnValue;
     const PlatformStyle *platformStyle;
     std::unique_ptr<QWidget> shutdownWindow;

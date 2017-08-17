@@ -55,11 +55,11 @@ public:
 
 public:
     enum Base58Type {
-        PUBKEY_ADDRESS, // 公開鍵アドレス.
-        SCRIPT_ADDRESS, // スクリプトアドレス.
-        SECRET_KEY,     // 秘密鍵.
-        EXT_PUBLIC_KEY, // 拡張公開鍵.
-        EXT_SECRET_KEY, // 拡張秘密鍵.
+        PUBKEY_ADDRESS,
+        SCRIPT_ADDRESS,
+        SECRET_KEY,
+        EXT_PUBLIC_KEY,
+        EXT_SECRET_KEY,
 
         MAX_BASE58_TYPES
     };
@@ -87,7 +87,7 @@ public:
     const CCheckpointData& Checkpoints() const { return checkpointData; }
     const ChainTxData& TxData() const { return chainTxData; }
 private:
-    CChainParams(); // 引数無しの初期化は認めない. (ダミー宣言. 実装は存在しない)
+    CChainParams();
 protected:
     CChainParams(NetworkType networkType);
 

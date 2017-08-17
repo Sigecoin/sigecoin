@@ -64,24 +64,28 @@ int main(int argc, char **argv)
 {
     ECCVerifyHandle globalVerifyHandle;
     std::vector<char> buffer;
-    if (!read_stdin(buffer)) return 0;
+    //if (!read_stdin(buffer)) return 0;
+    buffer.push_back(1);
+    buffer.push_back(0);
+    buffer.push_back(0);
+    buffer.push_back(0);
 
-    if (buffer.size() < sizeof(uint32_t)) return 0;
+//    if (buffer.size() < sizeof(uint32_t)) return 0;
 
-    uint32_t test_id = 0xffffffff;
+    uint32_t test_id = 1;
     memcpy(&test_id, &buffer[0], sizeof(uint32_t));
-    buffer.erase(buffer.begin(), buffer.begin() + sizeof(uint32_t));
-
+    //buffer.erase(buffer.begin(), buffer.begin() + sizeof(uint32_t));
+    
     if (test_id >= TEST_ID_END) return 0;
 
     CDataStream ds(buffer, SER_NETWORK, INIT_PROTO_VERSION);
-    try {
+   /* try {
         int nVersion;
         ds >> nVersion;
         ds.SetVersion(nVersion);
     } catch (const std::ios_base::failure&) {
         return 0;
-    }
+    }*/
 
     switch(test_id) {
         case CBLOCK_DESERIALIZE:

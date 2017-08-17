@@ -14,7 +14,9 @@ WalletTestingSetup::WalletTestingSetup(NetworkType chainType):
     bitdb.MakeMock();
 
     bool fFirstRun;
-    pwalletMain = new CWallet("wallet_test.dat");
+    boost::filesystem::path p("mock");
+    boost::filesystem::path db = p / "mock.mdb";
+    pwalletMain = new CWallet(db.string());
     pwalletMain->LoadWallet(&fFirstRun);
     RegisterValidationInterface(pwalletMain);
 

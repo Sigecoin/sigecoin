@@ -6,8 +6,10 @@
 #define SIGE_QT_SIGECOINAMOUNTFIELD_H
 
 #include "amount.h"
+#include "sigecoinunits.h"
 
 #include <QWidget>
+#include <QAbstractSpinBox>
 
 class AmountSpinBox;
 
@@ -30,7 +32,7 @@ public:
     CAmount value(bool *value=0) const;
     void setValue(const CAmount& value);
 
-    /** Set single step in satoshis **/
+    /** Set single step in siges **/
     void setSingleStep(const CAmount& step);
 
     /** Make read-only **/
@@ -69,6 +71,55 @@ private:
 private Q_SLOTS:
     void unitChanged(int idx);
 
+};
+
+/** QSpinBox that uses fixed-point numbers internally and uses our own
+* formatting/parsing functions.
+*/
+class AmountSpinBox : public QAbstractSpinBox
+{
+    Q_OBJECT
+
+public:
+    explicit AmountSpinBox(QWidget *parent);
+
+    QValidator::State validate(QString &text, int &pos) const;
+
+    void fixup(QString &input) const;
+
+    CAmount value(bool *valid_out = 0) const 
+    { return parse(text(), valid_out); }
+
+    void setValue(const CAmount& value);
+
+    void stepBy(int steps);
+
+    void setDisplayUnit(int unit);
+
+    void setSingleStep(const CAmount& step)
+    { singleStep = step; }
+
+    QSize minimumSizeHint() const;
+
+private:
+    int currentUnit;
+    CAmount singleStep;
+    mutable QSize cachedMinimumSizeHint;
+
+    /**
+    * Parse a string into a number of base monetary units and
+    * return validity.
+    * @note Must return 0 if !valid.
+    */
+    CAmount parse(const QString &text, bool *valid_out = 0) const;
+
+protected:
+    bool event(QEvent *event);
+
+    StepEnabled stepEnabled() const;
+
+Q_SIGNALS:
+    void valueChanged();
 };
 
 #endif // SIGE_QT_SIGECOINAMOUNTFIELD_H

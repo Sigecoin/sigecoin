@@ -14,12 +14,13 @@
 #include "platformstyle.h"
 #include "sendcoinsentry.h"
 #include "walletmodel.h"
+#include "walletmodeltransaction.h"
 
-#include "base58.h"
+#include "sigaddress.h"
 #include "chainparams.h"
 #include "wallet/coincontrol.h"
 #include "validation.h" // mempool and minRelayTxFee
-#include "ui_interface.h"
+#include "uinterface.h"
 #include "txmempool.h"
 #include "wallet/wallet.h"
 
@@ -756,7 +757,7 @@ void SendCoinsDialog::coinControlChangeEdited(const QString& text)
         CoinControlDialog::coinControl->destChange = CNoDestination();
         ui->labelCoinControlChangeLabel->setStyleSheet("QLabel{color:red;}");
 
-        CSigAddress addr = CSigAddress(text.toStdString());
+        CSigAddress addr(base58string(text.toStdString()));
 
         if (text.isEmpty()) // Nothing entered
         {

@@ -3,6 +3,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "walletmodel.h"
+#include "walletmodeltransaction.h"
 
 #include "addresstablemodel.h"
 #include "consensus/validation.h"
@@ -12,15 +13,15 @@
 #include "recentrequeststablemodel.h"
 #include "transactiontablemodel.h"
 
-#include "base58.h"
 #include "keystore.h"
 #include "validation.h"
+#include "sigaddress.h"
 #include "net.h" // for g_connman
 #include "sync.h"
-#include "ui_interface.h"
+#include "uinterface.h"
 #include "util.h" // for GetBoolArg
 #include "wallet/wallet.h"
-#include "wallet/walletdb.h" // for BackupWallet
+#include "wallet/wallet_db.h" // for BackupWallet
 
 #include <stdint.h>
 
@@ -121,7 +122,7 @@ void WalletModel::pollBalanceChanged()
     TRY_LOCK(cs_main, lockMain);
     if(!lockMain)
         return;
-    TRY_LOCK(wallet->cs_wallet, lockWallet);
+    TRY_LOCK(wallet->m_walletCriticalSection, lockWallet);
     if(!lockWallet)
         return;
 
@@ -188,7 +189,7 @@ void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
 
 bool WalletModel::validateAddress(const QString &address)
 {
-    CSigAddress addressParsed(address.toStdString());
+    CSigAddress addressParsed(base58string(address.toStdString()));
     return addressParsed.IsValid();
 }
 
@@ -247,7 +248,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
             setAddress.insert(rcp.address);
             ++nAddresses;
 
-            CScript scriptPubKey = GetScriptForDestination(CSigAddress(rcp.address.toStdString()).Get());
+            CScript scriptPubKey = GetScriptForDestination(CSigAddress(base58string(rcp.address.toStdString())).Get());
             CRecipient recipient = {scriptPubKey, rcp.amount, rcp.fSubtractFeeFromAmount};
             vecSend.push_back(recipient);
 
@@ -267,7 +268,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
     }
 
     {
-        LOCK2(cs_main, wallet->cs_wallet);
+        LOCK2(cs_main, wallet->m_walletCriticalSection);
 
         transaction.newPossibleKeyChange(wallet);
 
@@ -308,7 +309,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
     QByteArray transaction_array; /* store serialized transaction */
 
     {
-        LOCK2(cs_main, wallet->cs_wallet);
+        LOCK2(cs_main, wallet->m_walletCriticalSection);
         CWalletTx *newTx = transaction.getTransaction();
 
         Q_FOREACH(const SendCoinsRecipient &rcp, transaction.getRecipients())
@@ -348,10 +349,10 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(WalletModelTransaction &tran
         if (!rcp.paymentRequest.IsInitialized())
         {
             std::string strAddress = rcp.address.toStdString();
-            CTxDestination dest = CSigAddress(strAddress).Get();
+            CTxDestination dest = CSigAddress(base58string(strAddress)).Get();
             std::string strLabel = rcp.label.toStdString();
             {
-                LOCK(wallet->cs_wallet);
+                LOCK(wallet->m_walletCriticalSection);
 
                 std::map<CTxDestination, CAddressBookData>::iterator mi = wallet->mapAddressBook.find(dest);
 
@@ -441,7 +442,7 @@ bool WalletModel::changePassphrase(const SecureString &oldPass, const SecureStri
 {
     bool retval;
     {
-        LOCK(wallet->cs_wallet);
+        LOCK(wallet->m_walletCriticalSection);
         wallet->Lock(); // Make sure wallet is locked before attempting pass change
         retval = wallet->ChangeWalletPassphrase(oldPass, newPass);
     }
@@ -464,7 +465,7 @@ static void NotifyAddressBookChanged(WalletModel *walletmodel, CWallet *wallet,
         const CTxDestination &address, const std::string &label, bool isMine,
         const std::string &purpose, ChangeType status)
 {
-    QString strAddress = QString::fromStdString(CSigAddress(address).ToString());
+    QString strAddress = QString::fromStdString(address.GetBase58addressWithNetworkPrefix().c_str());
     QString strLabel = QString::fromStdString(label);
     QString strPurpose = QString::fromStdString(purpose);
 
@@ -574,7 +575,7 @@ bool WalletModel::getPrivKey(const CKeyID &address, CKey& vchPrivKeyOut) const
 // returns a list of COutputs from COutPoints
 void WalletModel::getOutputs(const std::vector<COutPoint>& vOutpoints, std::vector<COutput>& vOutputs)
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     BOOST_FOREACH(const COutPoint& outpoint, vOutpoints)
     {
         if (!wallet->mapWallet.count(outpoint.hash)) continue;
@@ -587,7 +588,7 @@ void WalletModel::getOutputs(const std::vector<COutPoint>& vOutpoints, std::vect
 
 bool WalletModel::isSpent(const COutPoint& outpoint) const
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     return wallet->IsSpent(outpoint.hash, outpoint.n);
 }
 
@@ -597,7 +598,7 @@ void WalletModel::listCoins(std::map<QString, std::vector<COutput> >& mapCoins) 
     std::vector<COutput> vCoins;
     wallet->AvailableCoins(vCoins);
 
-    LOCK2(cs_main, wallet->cs_wallet); // ListLockedCoins, mapWallet
+    LOCK2(cs_main, wallet->m_walletCriticalSection); // ListLockedCoins, mapWallet
     std::vector<COutPoint> vLockedCoins;
     wallet->ListLockedCoins(vLockedCoins);
 
@@ -625,37 +626,37 @@ void WalletModel::listCoins(std::map<QString, std::vector<COutput> >& mapCoins) 
         CTxDestination address;
         if(!out.fSpendable || !ExtractDestination(cout.tx->tx->vout[cout.i].scriptPubKey, address))
             continue;
-        mapCoins[QString::fromStdString(CSigAddress(address).ToString())].push_back(out);
+        mapCoins[QString::fromStdString(address.GetBase58addressWithNetworkPrefix().c_str())].push_back(out);
     }
 }
 
 bool WalletModel::isLockedCoin(uint256 hash, unsigned int n) const
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     return wallet->IsLockedCoin(hash, n);
 }
 
 void WalletModel::lockCoin(COutPoint& output)
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     wallet->LockCoin(output);
 }
 
 void WalletModel::unlockCoin(COutPoint& output)
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     wallet->UnlockCoin(output);
 }
 
 void WalletModel::listLockedCoins(std::vector<COutPoint>& vOutpts)
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     wallet->ListLockedCoins(vOutpts);
 }
 
 void WalletModel::loadReceiveRequests(std::vector<std::string>& vReceiveRequests)
 {
-    LOCK(wallet->cs_wallet);
+    LOCK(wallet->m_walletCriticalSection);
     BOOST_FOREACH(const PAIRTYPE(CTxDestination, CAddressBookData)& item, wallet->mapAddressBook)
         BOOST_FOREACH(const PAIRTYPE(std::string, std::string)& item2, item.second.destdata)
             if (item2.first.size() > 2 && item2.first.substr(0,2) == "rr") // receive request
@@ -664,13 +665,13 @@ void WalletModel::loadReceiveRequests(std::vector<std::string>& vReceiveRequests
 
 bool WalletModel::saveReceiveRequest(const std::string &sAddress, const int64_t nId, const std::string &sRequest)
 {
-    CTxDestination dest = CSigAddress(sAddress).Get();
+    CTxDestination dest = CSigAddress(base58string(sAddress)).Get();
 
     std::stringstream ss;
     ss << nId;
     std::string key = "rr" + ss.str(); // "rr" prefix = "receive request" in destdata
 
-    LOCK(wallet->cs_wallet);
+    LOCK(wallet->m_walletCriticalSection);
     if (sRequest.empty())
         return wallet->EraseDestData(dest, key);
     else
@@ -679,7 +680,7 @@ bool WalletModel::saveReceiveRequest(const std::string &sAddress, const int64_t 
 
 bool WalletModel::transactionCanBeAbandoned(uint256 hash) const
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     const CWalletTx *wtx = wallet->GetWalletTx(hash);
     if (!wtx || wtx->isAbandoned() || wtx->GetDepthInMainChain() > 0 || wtx->InMempool())
         return false;
@@ -688,7 +689,7 @@ bool WalletModel::transactionCanBeAbandoned(uint256 hash) const
 
 bool WalletModel::abandonTransaction(uint256 hash) const
 {
-    LOCK2(cs_main, wallet->cs_wallet);
+    LOCK2(cs_main, wallet->m_walletCriticalSection);
     return wallet->AbandonTransaction(hash);
 }
 

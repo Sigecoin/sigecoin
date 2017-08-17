@@ -74,6 +74,8 @@ bool AppInit(int argc, char* argv[])
     if (IsArgSet("-?") || IsArgSet("-h") ||  IsArgSet("-help") || IsArgSet("-version"))
     {
         std::string strUsage = strprintf(_("%s Daemon"), _(PACKAGE_NAME)) + " " + _("version") + " " + FormatFullVersion() + "\n";
+        SelectParams(NETWORK_MAIN);
+        SelectParams(NETWORK_TESTNET);
 
         if (IsArgSet("-version"))
         {

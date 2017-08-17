@@ -45,9 +45,12 @@
 #include <boost/math/distributions/poisson.hpp>
 #include <boost/thread.hpp>
 
+/*
 #if defined(NDEBUG)
 # error "Sigecoin cannot be compiled without assertions."
 #endif
+*/
+
 
 /**
  * Global state
@@ -1169,7 +1172,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
-    CAmount nSubsidy = 50 * COIN;
+    CAmount nSubsidy = 5 * COIN;
     // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
     return nSubsidy;
@@ -2981,6 +2984,9 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     if (block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.Invalid(false, REJECT_INVALID, "time-too-old", "block's timestamp is too early");
 
+    int64_t blockTime = block.GetBlockTime();
+    int64_t adjTime = nAdjustedTime + 2 * 60 * 60;
+
     // Check timestamp
     if (block.GetBlockTime() > nAdjustedTime + 2 * 60 * 60)
         return state.Invalid(false, REJECT_INVALID, "time-too-new", "block timestamp too far in the future");
@@ -3925,6 +3931,7 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                         break;
                     }
                 }
+                std::string sss = hash.GetHex();
 
                 NotifyHeaderTip();
 

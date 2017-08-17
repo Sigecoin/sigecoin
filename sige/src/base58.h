@@ -78,7 +78,7 @@ protected:
     //! the actually encoded data
     VectorUchar m_vchData;
 
-public: // ### 仮.
+public:
     CBase58Data();
     void SetData(const std::vector<unsigned char> &vchVersionIn, const void* pdata, size_t nSize);
     void SetData(const std::vector<unsigned char> &vchVersionIn, const unsigned char *pbegin, const unsigned char *pend);

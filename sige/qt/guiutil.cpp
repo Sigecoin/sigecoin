@@ -9,7 +9,9 @@
 #include "qvalidatedlineedit.h"
 #include "walletmodel.h"
 
+#include "sigaddress.h"
 #include "primitives/transaction.h"
+#include "chainparams.h"
 #include "init.h"
 #include "policy/policy.h"
 #include "protocol.h"
@@ -117,9 +119,9 @@ static std::string DummyAddress(const CChainParams &params)
     std::vector<unsigned char> sourcedata = params.Base58Prefix(CChainParams::PUBKEY_ADDRESS);
     sourcedata.insert(sourcedata.end(), dummydata, dummydata + sizeof(dummydata));
     for(int i=0; i<256; ++i) { // Try every trailing byte
-        std::string s = EncodeBase58(sourcedata.data(), sourcedata.data() + sourcedata.size());
+        base58string s((const char*)sourcedata.data());
         if (!CSigAddress(s).IsValid())
-            return s;
+            return s.c_str();
         sourcedata[sourcedata.size()-1] += 1;
     }
     return "";
@@ -254,7 +256,7 @@ QString formatSigecoinURI(const SendCoinsRecipient &info)
 
 bool isDust(const QString& address, const CAmount& amount)
 {
-    CTxDestination dest = CSigAddress(address.toStdString()).Get();
+    CTxDestination dest = CSigAddress(base58string(address.toStdString())).Get();
     CScript script = GetScriptForDestination(dest);
     CTxOut txOut(amount, script);
     return txOut.IsDust(dustRelayFee);
@@ -603,10 +605,10 @@ TableViewLastColumnResizingFixer::TableViewLastColumnResizingFixer(QTableView* t
 #ifdef WIN32
 boost::filesystem::path static StartupShortcutPath()
 {
-    std::string chain = ChainNameFromCommandLine();
-    if (chain == CBaseChainParams::MAIN)
+    NetworkType chain = ChainNameFromCommandLine();
+    if (chain == NETWORK_MAIN)
         return GetSpecialFolderPath(CSIDL_STARTUP) / "Sigecoin.lnk";
-    if (chain == CBaseChainParams::TESTNET) // Remove this special case when CBaseChainParams::TESTNET = "testnet4"
+    if (chain == NETWORK_TESTNET) // Remove this special case when CBaseChainParams::TESTNET = "testnet4"
         return GetSpecialFolderPath(CSIDL_STARTUP) / "Sigecoin (testnet).lnk";
     return GetSpecialFolderPath(CSIDL_STARTUP) / strprintf("Sigecoin (%s).lnk", chain);
 }
@@ -909,7 +911,8 @@ QString formatServicesStr(quint64 mask)
 
     // Just scan the last 8 bits for now.
     for (int i = 0; i < 8; i++) {
-        uint64_t check = 1 << i;
+        uint64_t check = 1;
+        check <<= i;
         if (mask & check)
         {
             switch (check)

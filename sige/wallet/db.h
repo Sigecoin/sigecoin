@@ -56,7 +56,7 @@ public:
     mutable CCriticalSection cs_db;
     MDB_env* environment;
     std::map<std::string, int> mapFileUseCount;
-    std::map<std::string, CDB*> mapDb;
+    std::multimap<std::string, CDB*> mapDb;
 
     CDBEnv();
     ~CDBEnv();
@@ -132,7 +132,7 @@ protected:
     bool fFlushOnClose;
 
     explicit CDB(const std::string& name, const char* pszMode = "r+", bool fFlushOnCloseIn=true);
-    ~CDB() { Close(); }
+    ~CDB();
 
 public:
     void Flush();
@@ -145,6 +145,13 @@ private:
     CDB(const CDB&);
 
 protected:
+
+    MDB_txn* getTx()
+    {
+        if (activeTxn == NULL) TxnBegin();
+        return activeTxn ? activeTxn->get() : NULL;
+    }
+
     template <typename K, typename T>
     bool Read(const K& key, T& value)
     {
@@ -157,7 +164,7 @@ protected:
         ssKey << key;
         MDB_val datKey = { ssKey.size(), ssKey.data() };
         MDB_val constData = {0};
-        auto status = mdb_get(activeTxn->get(), db_, &datKey, &constData);
+        auto status = mdb_get(getTx(), db_, &datKey, &constData);
         memset(datKey.mv_data, 0, datKey.mv_size);
         if (constData.mv_size > 0 && constData.mv_data != NULL)
         {
@@ -170,12 +177,11 @@ protected:
         return (status == 0);
     }
 
-    template <typename K, typename T>
-    bool Write(const K& key, const T& value, bool fOverwrite = true)
+    template <typename K, typename T> bool Write(const K& key, const T& value, bool fOverwrite = true)
     {
         if (db_ == 0)
             return false;
-        if (fReadOnly)
+        if (fReadOnly == true)
             assert(!"Write called on database in read-only mode");
 
         // Key
@@ -191,7 +197,7 @@ protected:
         MDB_val datValue = { ssValue.size(), ssValue.data() };
 
         // Write
-        auto status = mdb_put(activeTxn->get(), db_, &datKey, &datValue, fOverwrite ? 0 : MDB_NOOVERWRITE);
+        auto status = mdb_put(getTx(), db_, &datKey, &datValue, fOverwrite ? 0 : MDB_NOOVERWRITE);
 
         // Clear memory in case it was a private key
         memset(datKey.mv_data, 0, datKey.mv_size);
@@ -214,7 +220,8 @@ protected:
         MDB_val datKey = { ssKey.size(), ssKey.data() };
 
         // Erase
-        auto status = mdb_del(activeTxn->get(), db_, &datKey, NULL);
+        auto status = mdb_del(getTx(), db_, &datKey, NULL);
+
         // Clear memory
         memset(datKey.mv_data, 0, datKey.mv_size);
         return (status == 0 || status == MDB_NOTFOUND);
@@ -234,7 +241,8 @@ protected:
 
         // Exists
         MDB_val constData = { 0 };
-        auto status = mdb_get(activeTxn->get(), db_, &datKey, &constData);
+        auto status = mdb_get(getTx(), db_, &datKey, &constData);
+
         // Clear memory
         memset(datKey.mv_data, 0, datKey.mv_size);
         return (status == 0);
@@ -245,7 +253,7 @@ protected:
         if (0 == db_)
             return NULL;
         MDB_cursor* pcursor = NULL;
-        auto status = mdb_cursor_open(activeTxn->get(), db_, &pcursor);
+        auto status = mdb_cursor_open(getTx(), db_, &pcursor);
         return (status == 0 ? pcursor : NULL);
     }
 
@@ -273,16 +281,13 @@ protected:
         ssValue.SetType(SER_DISK);
         ssValue.clear();
         ssValue.write((char*)datValue.mv_data, datValue.mv_size);
-
-        // Clear and free memory
-        if (setRange) memset(datKey.mv_data, 0, datKey.mv_size);
         return 0;
     }
 
 public:
     bool TxnBegin()
     {
-        if (db_ == 0 || activeTxn)
+        if (bitdb.environment == NULL || activeTxn)
             return false;
         CDBTransact* ptxn = bitdb.TxnBegin(fReadOnly);
         if (!ptxn)

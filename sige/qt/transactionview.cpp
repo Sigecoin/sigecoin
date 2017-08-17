@@ -17,7 +17,7 @@
 #include "transactiontablemodel.h"
 #include "walletmodel.h"
 
-#include "ui_interface.h"
+#include "uinterface.h"
 
 #include <QComboBox>
 #include <QDateTimeEdit>

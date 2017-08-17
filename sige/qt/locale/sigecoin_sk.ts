@@ -1442,8 +1442,8 @@
         <translation>za kilobajt</translation>
     </message>
     <message>
-        <source>If the custom fee is set to 1000 satoshis and the transaction is only 250 bytes, then "per kilobyte" only pays 250 satoshis in fee, while "total at least" pays 1000 satoshis. For transactions bigger than a kilobyte both pay by kilobyte.</source>
-        <translation>Ak je poplatok nastavený na 1000 satoshi a transakcia je veľká len 250 bajtov, potom "za kilobajt" zaplatí poplatok 250 satoshi, ale "spolu aspoň" zaplatí 1000 satoshi. Pre transakcie väčšie ako kilobajt platia oba spôsoby za každý kilobajt.</translation>
+        <source>If the custom fee is set to 1000 siges and the transaction is only 250 bytes, then "per kilobyte" only pays 250 siges in fee, while "total at least" pays 1000 siges. For transactions bigger than a kilobyte both pay by kilobyte.</source>
+        <translation>Ak je poplatok nastavený na 1000 sige a transakcia je veľká len 250 bajtov, potom "za kilobajt" zaplatí poplatok 250 sige, ale "spolu aspoň" zaplatí 1000 sige. Pre transakcie väčšie ako kilobajt platia oba spôsoby za každý kilobajt.</translation>
     </message>
     <message>
         <source>Hide</source>

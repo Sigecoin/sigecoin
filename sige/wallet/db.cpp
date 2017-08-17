@@ -101,8 +101,9 @@ bool CDBEnv::Open(const boost::filesystem::path& pathIn)
     strPath = pathIn.string();
     boost::filesystem::path pathLogDir = pathIn / "database";
     TryCreateDirectory(pathLogDir);
-    boost::filesystem::path pathErrorFile = pathIn / "db.log";
+    boost::filesystem::path pathErrorFile = pathLogDir / "db.log";
     LogPrintf("CDBEnv::Open: LogDir=%s ErrorFile=%s\n", pathLogDir.string(), pathErrorFile.string());
+    boost::filesystem::path pathDbFile = pathLogDir / "wallet.mdb";
 
 /*    
 !!! not used
@@ -110,7 +111,7 @@ bool CDBEnv::Open(const boost::filesystem::path& pathIn)
     if (GetBoolArg("-privdb", DEFAULT_WALLET_PRIVDB))
         privat = true;
 */
-    auto status = mdb_env_open(environment, pathLogDir.string().c_str(), MDB_NOSUBDIR, 0600);
+    auto status = mdb_env_open(environment, pathDbFile.string().c_str(), MDB_NOSUBDIR, 0600);
     if (status != 0)
         return error("CDBEnv::Open: Error %d opening database environment\n", status);
 
@@ -175,7 +176,8 @@ CDBTransact* CDBEnv::TxnBegin(bool readonly)
     CDBTransact* transact = NULL;
     MDB_txn* ptxn = NULL;
     auto status = mdb_txn_begin(environment, NULL/*parent_a*/, readonly ? MDB_RDONLY : 0, &ptxn);
-    if (status == 0 && ptxn != NULL) {
+    if (status == 0 && ptxn != NULL) 
+    {
         add_transaction();
         transact = new CDBTransact(*this, ptxn);
     }
@@ -191,9 +193,11 @@ void CDBEnv::MakeMock()
     strPath = pathIn.string();
     boost::filesystem::path pathLogDir = pathIn / "mock";
     TryCreateDirectory(pathLogDir);
-    boost::filesystem::path pathErrorFile = pathIn / "db_mock.log";
+    boost::filesystem::path pathDbFile = pathLogDir / "mock.mdb";
+    boost::filesystem::path pathErrorFile = pathLogDir / "db_mock.log";
+    LogPrintf("CDBEnv::Open: LogDir=%s ErrorFile=%s\n", pathLogDir.string(), pathErrorFile.string());
 
-    auto status = mdb_env_open(environment, pathLogDir.string().c_str(), MDB_NOSUBDIR, 0600);
+    auto status = mdb_env_open(environment, pathDbFile.string().c_str(), MDB_NOSUBDIR, 0600);
     if (status != 0)
         throw runtime_error(strprintf("CDBEnv::MakeMock: Error %d opening database environment.", status));
 
@@ -206,21 +210,27 @@ void CDBEnv::CheckpointLSN(const std::string& name)
     auto dbIt = mapDb.find(name);
     if (dbIt != mapDb.end())
     {
-        int refc = mapDb[name]->Close();
-        if (!mapDb[name]->fFlushOnClose)
-            mapDb[name]->Flush();
+        CDB* ptr = dbIt->second;
+        int refc = ptr->Close();
+        if (!ptr->fFlushOnClose)
+            ptr->Flush();
 
         if (refc == 0) {
-            delete mapDb[name];
-            mapDb.erase(name);
+            delete ptr;
+            mapDb.erase(dbIt);
         }
     }
 }
 
-CDB::CDB(const std::string& name, const char* pszMode, bool fFlushOnCloseIn) : db_(0), activeTxn(NULL)
+CDB::CDB(const std::string& name, const char* pszMode, bool fFlushOnCloseIn) : strName(name), db_(0), activeTxn(NULL), fReadOnly(false)
 {
+    const char* ptr = strchr(pszMode, '+');
+    if (ptr == NULL) {
+        ptr = strchr(pszMode, 'w');
+        fReadOnly = ptr == NULL;
+    }
+
     int ret;
-    fReadOnly = (!strchr(pszMode, '+') && !strchr(pszMode, 'w'));
     fFlushOnClose = fFlushOnCloseIn;
     if (strName.empty())
         return;
@@ -237,18 +247,16 @@ CDB::CDB(const std::string& name, const char* pszMode, bool fFlushOnCloseIn) : d
 
         strName = name;
         auto it = bitdb.mapDb.find(strName);
-        if (it != bitdb.mapDb.cend() && bitdb.mapFileUseCount[strName] > 0)
+        if (it != bitdb.mapDb.cend() && bitdb.mapFileUseCount.find(strName) != bitdb.mapFileUseCount.end())
         {
             ++bitdb.mapFileUseCount[strName];
             db_ = it->second->db_;
+            activeTxn = it->second->activeTxn;
         }
         else
         {
-            activeTxn = bitdb.TxnBegin(fReadOnly);
-            if (activeTxn == NULL)
-                throw runtime_error(strprintf("CDB: Failed to create transaction to create %s database", strName));
-
-            auto status = mdb_dbi_open(activeTxn->get(), strName.c_str(), nFlags, &db_);
+            auto status = mdb_dbi_open(getTx(), strName.c_str(), nFlags, &db_);
+            
             if (status != 0)
             {
                 db_ = 0;
@@ -263,17 +271,29 @@ CDB::CDB(const std::string& name, const char* pszMode, bool fFlushOnCloseIn) : d
                 WriteVersion(CLIENT_VERSION);
                 fReadOnly = fTmp;
             }
-
             ++bitdb.mapFileUseCount[strName];
-            bitdb.mapDb[strName] = this;
-            TxnCommit();
         }
+        bitdb.mapDb.insert(std::multimap<std::string, CDB*>::value_type(strName, this));
     }
+}
+
+CDB::~CDB()
+{
+    Close();
+    // remove DB object from global map
+    auto It = bitdb.mapDb.lower_bound(strName);
+    for(; It != bitdb.mapDb.end() && It->first == strName; ++It)
+        if (It->second == this)
+        {
+            bitdb.mapDb.erase(It);
+            break;
+        }
+    
 }
 
 void CDB::Flush()
 {
-    if (activeTxn != NULL) return;
+    if (activeTxn == NULL) return;
 
     // Flush database activity from memory pool to disk log
     auto status = mdb_env_sync(bitdb.environment, 1);
@@ -284,21 +304,25 @@ int CDB::Close()
 {
     if (db_ == 0) return 0;
 
-    if (activeTxn != NULL && fFlushOnClose)
-        TxnCommit();
-    else if(activeTxn != NULL)
-        TxnAbort();
-
     if (fFlushOnClose)
         Flush();
 
     LOCK(bitdb.cs_db);
     int refc = bitdb.mapFileUseCount[strName];
-    if (refc > 0)
+    if (refc < 2)
+    {
+        if (activeTxn != NULL && fFlushOnClose)
+            TxnCommit();
+        else if (activeTxn != NULL)
+            TxnAbort();
+        mdb_dbi_close(bitdb.environment, db_);
+        bitdb.mapFileUseCount[strName] = 0;
+    }
+    else
     {
         bitdb.mapFileUseCount[strName] = --refc;
-        if (refc == 0) mdb_dbi_close(bitdb.environment, db_);
     }
+
     db_ = 0;
     return refc;
 }
@@ -376,6 +400,7 @@ bool CDBEnv::RemoveDb(const string& name)
             CDBTransact* transaction = TxnBegin(false);
             --mapFileUseCount[name];
             status = mdb_drop(transaction->get(), db->db_, 1);
+            transaction->release();
             if (status == 0)
             { 
                 delete db;

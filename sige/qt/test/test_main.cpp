@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     ECC_Start();
     SetupEnvironment();
     SetupNetworking();
-    SelectParams(CBaseChainParams::MAIN);
+    SelectParams(NETWORK_MAIN);
     noui_connect();
 
     bool fInvalid = false;

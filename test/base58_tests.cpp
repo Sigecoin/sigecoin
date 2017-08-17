@@ -187,7 +187,8 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_gen)
             continue;
         }
         std::string exp_base58string = test[0].get_str();
-        std::vector<unsigned char> exp_payload = ParseHex(test[1].get_str());
+        std::string exp_payloadstring = test[1].get_str();
+        std::vector<unsigned char> exp_payload = ParseHex(exp_payloadstring);
         const UniValue &metadata = test[2].get_obj();
         bool isPrivkey = find_value(metadata, "isPrivkey").get_bool();
         bool isTestnet = find_value(metadata, "isTestnet").get_bool();
@@ -199,7 +200,7 @@ BOOST_AUTO_TEST_CASE(base58_keys_valid_gen)
         {
             bool isCompressed = find_value(metadata, "isCompressed").get_bool();
             CKey key;
-            key.SetBinary(&*exp_payload.begin(), &*exp_payload.end(), isCompressed);
+            key.SetBinary(&exp_payload[0], 1+(&exp_payload[exp_payload.size()-1]), isCompressed);
             assert(key.IsValid());
             BOOST_CHECK_MESSAGE(key.GetBase58stringWithNetworkSecretKeyPrefix().c_str() == exp_base58string, "result mismatch: " + strTest);
         }

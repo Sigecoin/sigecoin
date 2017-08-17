@@ -5,7 +5,7 @@
 #ifndef SIGE_QT_PEERTABLEMODEL_H
 #define SIGE_QT_PEERTABLEMODEL_H
 
-#include "net_processing.h" // For CNodeStateStats
+#include "netprocessing.h" // For CNodeStateStats
 #include "net.h"
 
 #include <QAbstractTableModel>

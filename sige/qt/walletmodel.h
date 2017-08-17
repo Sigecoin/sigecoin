@@ -5,9 +5,8 @@
 #ifndef SIGE_QT_WALLETMODEL_H
 #define SIGE_QT_WALLETMODEL_H
 
+#include "key.h"
 #include "paymentrequestplus.h"
-#include "walletmodeltransaction.h"
-
 #include "support/allocators/secure.h"
 
 #include <map>

@@ -950,6 +950,31 @@ BOOST_AUTO_TEST_CASE(script_build)
 #endif
 }
 
+void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fIncludeHex)
+{
+    txnouttype type;
+    std::vector<CTxDestination> dests;
+    int nRequired;
+
+    out.push_back(Pair("asm", ScriptToAsmStr(scriptPubKey)));
+    if (fIncludeHex)
+        out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
+
+    if (!ExtractDestinations(scriptPubKey, type, dests, nRequired)) {
+        out.push_back(Pair("type", GetTxnOutputType(type)));
+        return;
+    }
+
+    out.push_back(Pair("reqSigs", nRequired));
+    out.push_back(Pair("type", GetTxnOutputType(type)));
+
+    UniValue a(UniValue::VARR);
+    BOOST_FOREACH(const CTxDestination& dest, dests)
+        a.push_back(dest.GetBase58addressWithNetworkPrefix().c_str());
+    out.push_back(Pair("addresses", a));
+}
+
+
 BOOST_AUTO_TEST_CASE(script_json_test)
 {
     // Read tests from test/data/script_tests.json

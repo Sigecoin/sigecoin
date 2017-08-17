@@ -10,7 +10,7 @@
 
 #include <boost/filesystem.hpp>
 
-boost::filesystem::path GetTempPath() {
+boost::filesystem::path GetTestTempPath() {
 #if BOOST_FILESYSTEM_VERSION == 3
     return boost::filesystem::temp_directory_path();
 #else

@@ -34,7 +34,7 @@ static void CoinSelection(benchmark::State& state)
 {
     const CWallet wallet;
     std::vector<COutput> vCoins;
-    LOCK(wallet.cs_wallet);
+    LOCK(wallet.m_walletCriticalSection);
 
     while (state.KeepRunning()) {
         // Empty wallet.

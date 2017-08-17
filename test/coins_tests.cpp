@@ -107,7 +107,7 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
 {
     // Various coverage trackers.
     bool removed_all_caches = false;
-    bool reached_4_caches = false;
+    bool reached_2_caches = false;
     bool added_an_entry = false;
     bool removed_an_entry = false;
     bool updated_an_entry = false;
@@ -194,8 +194,8 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
                     removed_all_caches = true;
                 }
                 stack.push_back(new CCoinsViewCacheTest(tip));
-                if (stack.size() == 4) {
-                    reached_4_caches = true;
+                if (stack.size() == 2) {
+                    reached_2_caches = true;
                 }
             }
         }
@@ -209,7 +209,7 @@ BOOST_AUTO_TEST_CASE(coins_cache_simulation_test)
 
     // Verify coverage.
     BOOST_CHECK(removed_all_caches);
-    BOOST_CHECK(reached_4_caches);
+    BOOST_CHECK(reached_2_caches);
     BOOST_CHECK(added_an_entry);
     BOOST_CHECK(removed_an_entry);
     BOOST_CHECK(updated_an_entry);

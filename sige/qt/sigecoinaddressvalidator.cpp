@@ -4,7 +4,7 @@
 
 #include "sigecoinaddressvalidator.h"
 
-#include "base58.h"
+#include "sigaddress.h"
 
 /* Base58 characters are:
      "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
@@ -89,7 +89,7 @@ QValidator::State SigecoinAddressCheckValidator::validate(QString &input, int &p
 {
     Q_UNUSED(pos);
     // Validate the passed Sigecoin address
-    CSigAddress addr(input.toStdString());
+    CSigAddress addr(base58string(input.toStdString()));
     if (addr.IsValid())
         return QValidator::Acceptable;
 

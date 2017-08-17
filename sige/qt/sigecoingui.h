@@ -59,7 +59,7 @@ public:
     */
     void setClientModel(ClientModel *clientModel);
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     /** Set the wallet model.
         The wallet model represents a sigecoin wallet, and offers access to the list of transactions, address book and sending
         functionality.
@@ -67,7 +67,7 @@ public:
     bool addWallet(const QString& name, WalletModel *walletModel);
     bool setCurrentWallet(const QString& name);
     void removeAllWallets();
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
     bool enableWallet;
 
 protected:
@@ -172,7 +172,7 @@ public Q_SLOTS:
     */
     void message(const QString &title, const QString &message, unsigned int style, bool *ret = NULL);
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     /** Set the encryption status as shown in the UI.
        @param[in] status            current encryption status
        @see WalletModel::EncryptionStatus
@@ -189,10 +189,10 @@ public Q_SLOTS:
 
     /** Show incoming transaction notification for new transactions. */
     void incomingTransaction(const QString& date, int unit, const CAmount& amount, const QString& type, const QString& address, const QString& label);
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
 private Q_SLOTS:
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     /** Switch to overview (home) page */
     void gotoOverviewPage();
     /** Switch to history (transactions) page */
@@ -209,7 +209,7 @@ private Q_SLOTS:
 
     /** Show open dialog */
     void openClicked();
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
     /** Show configuration dialog */
     void optionsClicked();
     /** Show about dialog */

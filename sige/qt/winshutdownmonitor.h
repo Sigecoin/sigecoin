@@ -6,12 +6,12 @@
 #define SIGE_QT_WINSHUTDOWNMONITOR_H
 
 #ifdef WIN32
+#include <windows.h> // HWND
+
 #include <QByteArray>
 #include <QString>
 
 #if QT_VERSION >= 0x050000
-#include <windef.h> // for HWND
-
 #include <QAbstractNativeEventFilter>
 
 class WinShutdownMonitor : public QAbstractNativeEventFilter

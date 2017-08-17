@@ -19,10 +19,10 @@
 #include "txdb.h" // for -dbcache defaults
 #include "intro.h" 
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
-#include "wallet/walletdb.h"
-#endif
+#include "wallet/wallet_db.h"
+// #endif
 
 #include <QNetworkProxy>
 #include <QSettings>
@@ -104,19 +104,14 @@ void OptionsModel::Init(bool resetSettings)
         settings.setValue("strDataDir", Intro::getDefaultDataDirectory());
 
     // Wallet
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     if (!settings.contains("bSpendZeroConfChange"))
         settings.setValue("bSpendZeroConfChange", true);
     if (!SoftSetBoolArg("-spendzeroconfchange", settings.value("bSpendZeroConfChange").toBool()))
         addOverriddenOption("-spendzeroconfchange");
-#endif
+// #endif
 
     // Network
-    if (!settings.contains("fUseUPnP"))
-        settings.setValue("fUseUPnP", DEFAULT_UPNP);
-    if (!SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool()))
-        addOverriddenOption("-upnp");
-
     if (!settings.contains("fListen"))
         settings.setValue("fListen", DEFAULT_LISTEN);
     if (!SoftSetBoolArg("-listen", settings.value("fListen").toBool()))
@@ -229,10 +224,10 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return strlIpPort.at(1);
         }
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         case SpendZeroConfChange:
             return settings.value("bSpendZeroConfChange");
-#endif
+// #endif
         case DisplayUnit:
             return nDisplayUnit;
         case ThirdPartyTxUrls:
@@ -274,10 +269,6 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
         case MinimizeToTray:
             fMinimizeToTray = value.toBool();
             settings.setValue("fMinimizeToTray", fMinimizeToTray);
-            break;
-        case MapPortUPnP: // core option - can be changed on-the-fly
-            settings.setValue("fUseUPnP", value.toBool());
-            MapPort(value.toBool());
             break;
         case MinimizeOnClose:
             fMinimizeOnClose = value.toBool();
@@ -348,14 +339,14 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
         }
         break;
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         case SpendZeroConfChange:
             if (settings.value("bSpendZeroConfChange") != value) {
                 settings.setValue("bSpendZeroConfChange", value);
                 setRestartRequired(true);
             }
             break;
-#endif
+// #endif
         case DisplayUnit:
             setDisplayUnit(value);
             break;

@@ -21,11 +21,7 @@
 #include <QUrl>
 #endif
 
-#if defined(HAVE_CONFIG_H)
-#include "config/sigconfig.h" /* for USE_QRCODE */
-#endif
-
-#ifdef USE_QRCODE
+#if (USE_QRCODE==1)
 #include <qrencode.h>
 #endif
 
@@ -151,7 +147,7 @@ void ReceiveRequestDialog::update()
         html += "<b>"+tr("Message")+"</b>: " + GUIUtil::HtmlEscape(info.message) + "<br>";
     ui->outUri->setText(html);
 
-#ifdef USE_QRCODE
+#if (USE_QRCODE==1)
     ui->lblQRCode->setText("");
     if(!uri.isEmpty())
     {

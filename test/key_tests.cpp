@@ -26,14 +26,15 @@ static const CSigAddress addr2 (base58string("1F5y5E5FMc5YzdJtB9hLaUe43GDxEKXENJ
 static const CSigAddress addr1C(base58string("1NoJrossxPBKfCHuJXT4HadJrXRE9Fxiqs"));
 static const CSigAddress addr2C(base58string("1CRj2HyM1CXWzHAXLQtiGLyggNT9WQqsDs"));
 
-
 static const base58string strAddressBad("1HV9Lc3sNHZxwj4Zk6fB38tEmBryq2cBiF");
-
 
 BOOST_FIXTURE_TEST_SUITE(key_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(key_test1)
 {
+/*    bool ret = DecodeBase58((const char*)&msg[0], vv);
+    ret = DecodeBase58("GHV9Lc3sNHZxwj4Zk6fB38tEmBryq2cBiF", vv);
+    */
     BOOST_CHECK(!CKey::FromBase58string(strAddressBad).IsValid());
 
     CKey key1 = CKey::FromBase58string(strSecret1);

@@ -4,191 +4,154 @@
 
 #include "sigecoinamountfield.h"
 
-#include "sigecoinunits.h"
 #include "guiconstants.h"
 #include "qvaluecombobox.h"
 
 #include <QApplication>
-#include <QAbstractSpinBox>
 #include <QHBoxLayout>
 #include <QKeyEvent>
 #include <QLineEdit>
 
-/** QSpinBox that uses fixed-point numbers internally and uses our own
- * formatting/parsing functions.
- */
-class AmountSpinBox: public QAbstractSpinBox
+AmountSpinBox::AmountSpinBox(QWidget *parent) :
+    QAbstractSpinBox(parent),
+    currentUnit(SigecoinUnits::SGC),
+    singleStep(100000) // siges
 {
-    Q_OBJECT
+    setAlignment(Qt::AlignRight);
+    connect(lineEdit(), SIGNAL(textEdited(QString)), this, SIGNAL(valueChanged()));
+}
 
-public:
-    explicit AmountSpinBox(QWidget *parent):
-        QAbstractSpinBox(parent),
-        currentUnit(SigecoinUnits::SGC),
-        singleStep(100000) // satoshis
+QValidator::State AmountSpinBox::validate(QString &text, int &pos) const
+{
+    if(text.isEmpty())
+        return QValidator::Intermediate;
+    bool valid = false;
+    parse(text, &valid);
+    /* Make sure we return Intermediate so that fixup() is called on defocus */
+    return valid ? QValidator::Intermediate : QValidator::Invalid;
+}
+
+void AmountSpinBox::fixup(QString &input) const
+{
+    bool valid = false;
+    CAmount val = parse(input, &valid);
+    if(valid)
     {
-        setAlignment(Qt::AlignRight);
-
-        connect(lineEdit(), SIGNAL(textEdited(QString)), this, SIGNAL(valueChanged()));
+        input = SigecoinUnits::format(currentUnit, val, false, SigecoinUnits::separatorAlways);
+        lineEdit()->setText(input);
     }
+}
 
-    QValidator::State validate(QString &text, int &pos) const
-    {
-        if(text.isEmpty())
-            return QValidator::Intermediate;
-        bool valid = false;
-        parse(text, &valid);
-        /* Make sure we return Intermediate so that fixup() is called on defocus */
-        return valid ? QValidator::Intermediate : QValidator::Invalid;
-    }
+void AmountSpinBox::setValue(const CAmount& value)
+{
+    lineEdit()->setText(SigecoinUnits::format(currentUnit, value, false, SigecoinUnits::separatorAlways));
+    Q_EMIT valueChanged();
+}
 
-    void fixup(QString &input) const
-    {
-        bool valid = false;
-        CAmount val = parse(input, &valid);
-        if(valid)
-        {
-            input = SigecoinUnits::format(currentUnit, val, false, SigecoinUnits::separatorAlways);
-            lineEdit()->setText(input);
-        }
-    }
+void AmountSpinBox::stepBy(int steps)
+{
+    bool valid = false;
+    CAmount val = value(&valid);
+    val = val + steps * singleStep;
+    val = qMin(qMax(val, CAmount(0)), SigecoinUnits::maxMoney());
+    setValue(val);
+}
 
-    CAmount value(bool *valid_out=0) const
-    {
-        return parse(text(), valid_out);
-    }
+void AmountSpinBox::setDisplayUnit(int unit)
+{
+    bool valid = false;
+    CAmount val = value(&valid);
 
-    void setValue(const CAmount& value)
-    {
-        lineEdit()->setText(SigecoinUnits::format(currentUnit, value, false, SigecoinUnits::separatorAlways));
-        Q_EMIT valueChanged();
-    }
+    currentUnit = unit;
 
-    void stepBy(int steps)
-    {
-        bool valid = false;
-        CAmount val = value(&valid);
-        val = val + steps * singleStep;
-        val = qMin(qMax(val, CAmount(0)), SigecoinUnits::maxMoney());
+    if(valid)
         setValue(val);
-    }
+    else
+        clear();
+}
 
-    void setDisplayUnit(int unit)
+QSize AmountSpinBox::minimumSizeHint() const
+{
+    if(cachedMinimumSizeHint.isEmpty())
     {
-        bool valid = false;
-        CAmount val = value(&valid);
+        ensurePolished();
 
-        currentUnit = unit;
+        const QFontMetrics fm(fontMetrics());
+        int h = lineEdit()->minimumSizeHint().height();
+        int w = fm.width(SigecoinUnits::format(SigecoinUnits::SGC, SigecoinUnits::maxMoney(), false, SigecoinUnits::separatorAlways));
+        w += 2; // cursor blinking space
 
-        if(valid)
-            setValue(val);
-        else
-            clear();
+        QStyleOptionSpinBox opt;
+        initStyleOption(&opt);
+        QSize hint(w, h);
+        QSize extra(35, 6);
+        opt.rect.setSize(hint + extra);
+        extra += hint - style()->subControlRect(QStyle::CC_SpinBox, &opt,
+                                                QStyle::SC_SpinBoxEditField, this).size();
+        // get closer to final result by repeating the calculation
+        opt.rect.setSize(hint + extra);
+        extra += hint - style()->subControlRect(QStyle::CC_SpinBox, &opt,
+                                                QStyle::SC_SpinBoxEditField, this).size();
+        hint += extra;
+        hint.setHeight(h);
+
+        opt.rect = rect();
+
+        cachedMinimumSizeHint = style()->sizeFromContents(QStyle::CT_SpinBox, &opt, hint, this)
+                                .expandedTo(QApplication::globalStrut());
     }
+    return cachedMinimumSizeHint;
+}
 
-    void setSingleStep(const CAmount& step)
+CAmount AmountSpinBox::parse(const QString &text, bool *valid_out) const
+{
+    CAmount val = 0;
+    bool valid = SigecoinUnits::parse(currentUnit, text, &val);
+    if(valid)
     {
-        singleStep = step;
+        if(val < 0 || val > SigecoinUnits::maxMoney())
+            valid = false;
     }
+    if(valid_out)
+        *valid_out = valid;
+    return valid ? val : 0;
+}
 
-    QSize minimumSizeHint() const
+bool AmountSpinBox::event(QEvent *event)
+{
+    if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease)
     {
-        if(cachedMinimumSizeHint.isEmpty())
+        QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
+        if (keyEvent->key() == Qt::Key_Comma)
         {
-            ensurePolished();
-
-            const QFontMetrics fm(fontMetrics());
-            int h = lineEdit()->minimumSizeHint().height();
-            int w = fm.width(SigecoinUnits::format(SigecoinUnits::SGC, SigecoinUnits::maxMoney(), false, SigecoinUnits::separatorAlways));
-            w += 2; // cursor blinking space
-
-            QStyleOptionSpinBox opt;
-            initStyleOption(&opt);
-            QSize hint(w, h);
-            QSize extra(35, 6);
-            opt.rect.setSize(hint + extra);
-            extra += hint - style()->subControlRect(QStyle::CC_SpinBox, &opt,
-                                                    QStyle::SC_SpinBoxEditField, this).size();
-            // get closer to final result by repeating the calculation
-            opt.rect.setSize(hint + extra);
-            extra += hint - style()->subControlRect(QStyle::CC_SpinBox, &opt,
-                                                    QStyle::SC_SpinBoxEditField, this).size();
-            hint += extra;
-            hint.setHeight(h);
-
-            opt.rect = rect();
-
-            cachedMinimumSizeHint = style()->sizeFromContents(QStyle::CT_SpinBox, &opt, hint, this)
-                                    .expandedTo(QApplication::globalStrut());
+            // Translate a comma into a period
+            QKeyEvent periodKeyEvent(event->type(), Qt::Key_Period, keyEvent->modifiers(), ".", keyEvent->isAutoRepeat(), keyEvent->count());
+            return QAbstractSpinBox::event(&periodKeyEvent);
         }
-        return cachedMinimumSizeHint;
     }
+    return QAbstractSpinBox::event(event);
+}
 
-private:
-    int currentUnit;
-    CAmount singleStep;
-    mutable QSize cachedMinimumSizeHint;
+AmountSpinBox::StepEnabled AmountSpinBox::stepEnabled() const
+{
+    if (isReadOnly()) // Disable steps when AmountSpinBox is read-only
+        return StepNone;
+    if (text().isEmpty()) // Allow step-up with empty field
+        return StepUpEnabled;
 
-    /**
-     * Parse a string into a number of base monetary units and
-     * return validity.
-     * @note Must return 0 if !valid.
-     */
-    CAmount parse(const QString &text, bool *valid_out=0) const
+    StepEnabled rv = 0;
+    bool valid = false;
+    CAmount val = value(&valid);
+    if(valid)
     {
-        CAmount val = 0;
-        bool valid = SigecoinUnits::parse(currentUnit, text, &val);
-        if(valid)
-        {
-            if(val < 0 || val > SigecoinUnits::maxMoney())
-                valid = false;
-        }
-        if(valid_out)
-            *valid_out = valid;
-        return valid ? val : 0;
+        if(val > 0)
+            rv |= StepDownEnabled;
+        if(val < SigecoinUnits::maxMoney())
+            rv |= StepUpEnabled;
     }
+    return rv;
+}
 
-protected:
-    bool event(QEvent *event)
-    {
-        if (event->type() == QEvent::KeyPress || event->type() == QEvent::KeyRelease)
-        {
-            QKeyEvent *keyEvent = static_cast<QKeyEvent *>(event);
-            if (keyEvent->key() == Qt::Key_Comma)
-            {
-                // Translate a comma into a period
-                QKeyEvent periodKeyEvent(event->type(), Qt::Key_Period, keyEvent->modifiers(), ".", keyEvent->isAutoRepeat(), keyEvent->count());
-                return QAbstractSpinBox::event(&periodKeyEvent);
-            }
-        }
-        return QAbstractSpinBox::event(event);
-    }
-
-    StepEnabled stepEnabled() const
-    {
-        if (isReadOnly()) // Disable steps when AmountSpinBox is read-only
-            return StepNone;
-        if (text().isEmpty()) // Allow step-up with empty field
-            return StepUpEnabled;
-
-        StepEnabled rv = 0;
-        bool valid = false;
-        CAmount val = value(&valid);
-        if(valid)
-        {
-            if(val > 0)
-                rv |= StepDownEnabled;
-            if(val < SigecoinUnits::maxMoney())
-                rv |= StepUpEnabled;
-        }
-        return rv;
-    }
-
-Q_SIGNALS:
-    void valueChanged();
-};
-
-#include "sigecoinamountfield.moc"
 
 SigecoinAmountField::SigecoinAmountField(QWidget *parent) :
     QWidget(parent),

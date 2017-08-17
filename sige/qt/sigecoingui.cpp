@@ -2,10 +2,7 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#if defined(HAVE_CONFIG_H)
-#include "config/sigconfig.h"
-#endif
-
+#include "config/sigeconfig.h"
 #include "sigecoingui.h"
 
 #include "sigecoinunits.h"
@@ -22,10 +19,10 @@
 #include "rpcconsole.h"
 #include "utilitydialog.h"
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
 #include "walletframe.h"
 #include "walletmodel.h"
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
 #ifdef Q_OS_MAC
 #include "macdockiconhandler.h"
@@ -33,7 +30,7 @@
 
 #include "chainparams.h"
 #include "init.h"
-#include "ui_interface.h"
+#include "uinterface.h"
 #include "util.h"
 
 #include <iostream>
@@ -123,12 +120,12 @@ SigecoinGUI::SigecoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle
     spinnerFrame(0),
     platformStyle(_platformStyle)
 {
-    GUIUtil::restoreWindowGeometry("nWindow", QSize(850, 550), this);
+    GUIUtil::restoreWindowGeometry("nWindow", QSize(820, 550), this);
 
     QString windowTitle = tr(PACKAGE_NAME) + " - ";
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     enableWallet = WalletModel::isWalletEnabled();
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
     if(enableWallet)
     {
         windowTitle += tr("Wallet");
@@ -152,14 +149,14 @@ SigecoinGUI::SigecoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle
 
     rpcConsole = new RPCConsole(_platformStyle, 0);
     helpMessageDialog = new HelpMessageDialog(this, false);
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     if(enableWallet)
     {
         /** Create wallet frame and make it the central widget */
         walletFrame = new WalletFrame(_platformStyle, this);
         setCentralWidget(walletFrame);
     } else
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
     {
         /* When compiled without wallet or -disablewallet is provided,
          * the central widget is the rpc console.
@@ -247,13 +244,14 @@ SigecoinGUI::SigecoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle
     connect(connectionsControl, SIGNAL(clicked(QPoint)), this, SLOT(toggleNetworkActive()));
 
     modalOverlay = new ModalOverlay(this->centralWidget());
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     if(enableWallet) {
         connect(walletFrame, SIGNAL(requestedSyncWarningInfo()), this, SLOT(showModalOverlay()));
         connect(labelBlocksIcon, SIGNAL(clicked(QPoint)), this, SLOT(showModalOverlay()));
         connect(progressBar, SIGNAL(clicked(QPoint)), this, SLOT(showModalOverlay()));
     }
-#endif
+// #endif
+    setFixedWidth(1024);
 }
 
 SigecoinGUI::~SigecoinGUI()
@@ -312,7 +310,7 @@ void SigecoinGUI::createActions()
     historyAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_4));
     tabGroup->addAction(historyAction);
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     // These showNormalIfMinimized are needed because Send Coins and Receive Coins
     // can be triggered from the tray menu, and need to show the GUI to be useful.
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -327,7 +325,7 @@ void SigecoinGUI::createActions()
     connect(receiveCoinsMenuAction, SIGNAL(triggered()), this, SLOT(gotoReceiveCoinsPage()));
     connect(historyAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(historyAction, SIGNAL(triggered()), this, SLOT(gotoHistoryPage()));
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
     quitAction = new QAction(platformStyle->TextColorIcon(":/icons/quit"), tr("E&xit"), this);
     quitAction->setStatusTip(tr("Quit application"));
@@ -386,7 +384,7 @@ void SigecoinGUI::createActions()
     // prevents an open debug window from becoming stuck/unusable on client shutdown
     connect(quitAction, SIGNAL(triggered()), rpcConsole, SLOT(hide()));
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     if(walletFrame)
     {
         connect(encryptWalletAction, SIGNAL(triggered(bool)), walletFrame, SLOT(encryptWallet(bool)));
@@ -398,7 +396,7 @@ void SigecoinGUI::createActions()
         connect(usedReceivingAddressesAction, SIGNAL(triggered()), walletFrame, SLOT(usedReceivingAddresses()));
         connect(openAction, SIGNAL(triggered()), this, SLOT(openClicked()));
     }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
     new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_C), this, SLOT(showDebugWindowActivateConsole()));
     new QShortcut(QKeySequence(Qt::CTRL + Qt::SHIFT + Qt::Key_D), this, SLOT(showDebugWindow()));
@@ -488,12 +486,12 @@ void SigecoinGUI::setClientModel(ClientModel *_clientModel)
         connect(_clientModel, SIGNAL(showProgress(QString,int)), this, SLOT(showProgress(QString,int)));
 
         rpcConsole->setClientModel(_clientModel);
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         if(walletFrame)
         {
             walletFrame->setClientModel(_clientModel);
         }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
         unitDisplayControl->setOptionsModel(_clientModel->getOptionsModel());
         
         OptionsModel* optionsModel = _clientModel->getOptionsModel();
@@ -517,14 +515,14 @@ void SigecoinGUI::setClientModel(ClientModel *_clientModel)
         }
         // Propagate cleared model to child objects
         rpcConsole->setClientModel(nullptr);
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         walletFrame->setClientModel(nullptr);
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
         unitDisplayControl->setOptionsModel(nullptr);
     }
 }
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
 bool SigecoinGUI::addWallet(const QString& name, WalletModel *walletModel)
 {
     if(!walletFrame)
@@ -547,7 +545,7 @@ void SigecoinGUI::removeAllWallets()
     setWalletActionsEnabled(false);
     walletFrame->removeAllWallets();
 }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
 void SigecoinGUI::setWalletActionsEnabled(bool enabled)
 {
@@ -665,7 +663,7 @@ void SigecoinGUI::showHelpMessageClicked()
     helpMessageDialog->show();
 }
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
 void SigecoinGUI::openClicked()
 {
     OpenURIDialog dlg(this);
@@ -708,7 +706,7 @@ void SigecoinGUI::gotoVerifyMessageTab(QString addr)
 {
     if (walletFrame) walletFrame->gotoVerifyMessageTab(addr);
 }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
 void SigecoinGUI::updateNetworkState()
 {
@@ -815,13 +813,13 @@ void SigecoinGUI::setNumBlocks(int count, const QDateTime& blockDate, double nVe
         tooltip = tr("Up to date") + QString(".<br>") + tooltip;
         labelBlocksIcon->setPixmap(platformStyle->SingleColorIcon(":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         if(walletFrame)
         {
             walletFrame->showOutOfSyncWarning(false);
             modalOverlay->showHide(true, true);
         }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
         progressBarLabel->setVisible(false);
         progressBar->setVisible(false);
@@ -846,13 +844,13 @@ void SigecoinGUI::setNumBlocks(int count, const QDateTime& blockDate, double nVe
         }
         prevBlocks = count;
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
         if(walletFrame)
         {
             walletFrame->showOutOfSyncWarning(true);
             modalOverlay->showHide();
         }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
         tooltip += QString("<br>");
         tooltip += tr("Last received block was generated %1 ago.").arg(timeBehindText);
@@ -977,7 +975,7 @@ void SigecoinGUI::showEvent(QShowEvent *event)
     optionsAction->setEnabled(true);
 }
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
 void SigecoinGUI::incomingTransaction(const QString& date, int unit, const CAmount& amount, const QString& type, const QString& address, const QString& label)
 {
     // On new transaction, make an info balloon
@@ -991,7 +989,7 @@ void SigecoinGUI::incomingTransaction(const QString& date, int unit, const CAmou
     message((amount)<0 ? tr("Sent transaction") : tr("Incoming transaction"),
              msg, CClientUIInterface::MSG_INFORMATION);
 }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
 void SigecoinGUI::dragEnterEvent(QDragEnterEvent *event)
 {
@@ -1024,7 +1022,7 @@ bool SigecoinGUI::eventFilter(QObject *object, QEvent *event)
     return QMainWindow::eventFilter(object, event);
 }
 
-#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
 bool SigecoinGUI::handlePaymentRequest(const SendCoinsRecipient& recipient)
 {
     // URI has to be valid
@@ -1074,7 +1072,7 @@ void SigecoinGUI::setEncryptionStatus(int status)
         break;
     }
 }
-#endif // ENABLE_WALLET
+// #endif // ENABLE_WALLET
 
 void SigecoinGUI::showNormalIfMinimized(bool fToggleHidden)
 {

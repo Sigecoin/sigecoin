@@ -70,6 +70,8 @@ public:
     CBloomFilter(unsigned int nElements, double nFPRate, unsigned int nTweak, unsigned char nFlagsIn);
     CBloomFilter() : isFull(true), isEmpty(false), nHashFuncs(0), nTweak(0), nFlags(0) {}
 
+    const std::vector<unsigned char>& getVdata() const { return vData; }
+
     ADD_SERIALIZE_METHODS;
 
     template <typename Stream, typename Operation>

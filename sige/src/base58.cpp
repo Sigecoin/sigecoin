@@ -177,27 +177,21 @@ bool CBase58Data::_SetStringWithVersionBytes(
     unsigned int    nVersionBytes // default 1
 )
 {
-    // まずバージョン関係なくデコードを行う.
     std::vector<unsigned char> vchTemp;
     bool rc58 = DecodeBase58Check(psz, vchTemp);
 
-    // デコードに失敗した場合、もしくは、展開されたデータサイズがバージョン値 (default 1) より小さかったら.
     if ((!rc58) || (vchTemp.size() < nVersionBytes)) {
-        // エラーとみなし、データをクリアし、失敗結果を返す.
         m_vchData.clear();
         m_vchVersion.clear();
         return false;
     }
 
-    // バージョン値の適用.
     m_vchVersion.assign(vchTemp.begin(), vchTemp.begin() + nVersionBytes);
 
-    // ※展開データサイズからバージョン値 (default 1) を引いた値はこの時点で 0 以上になっているはず.
     m_vchData.resize(vchTemp.size() - nVersionBytes);
-    if (!m_vchData.empty()) // サイズが 0 でなければ
+    if (!m_vchData.empty())
         memcpy(&m_vchData[0], &vchTemp[nVersionBytes], m_vchData.size());
 
-    // テンポラリデータは完全にクリアする.
     memory_cleanse(&vchTemp[0], vchTemp.size());
     return true;
 }
