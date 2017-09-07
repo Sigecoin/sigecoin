@@ -58,7 +58,7 @@ CBlock CChainParamsUtil::CreateGenesisBlock(
     const CAmount& genesisReward
 )
 {
-    const char* pszTimestamp = "The Times 8/Aug/2017 SigeCoin";
-    const CScript genesisOutputScript = CScript() << ParseHex("044da964cf87340153f2005486ceda1023b87ec0125ef9d407fa95f02032cb86a5eb5e56842e927ad9bcf4b398746f945063aab84af5df84bc6d5018adc0ed533f") << OP_CHECKSIG;
+    const char* pszTimestamp = "The Times 31/Aug/2017 Sigecoin dev";
+    const CScript genesisOutputScript = CScript() << ParseHex("040184710fa689ad5023690c80f3a49c8f13f8d45b8c857fbcbc8bc4a8e4d3eb4b10f4d4604fa08dce601aaf0f470216fe1b51850b4acf21b179c45070ac7b03a9") << OP_CHECKSIG;
     return _CreateGenesisBlockImpl(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
 }

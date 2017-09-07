@@ -1,5 +1,4 @@
-﻿// Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
+// Copyright (c) 2017 SIGE developer
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -61,8 +60,8 @@ public:
         std::string h1 = consensus.hashGenesisBlock.ToHexString();
         std::string h2 = genesis.hashMerkleRoot.ToHexString();
 
-        assert(consensus.hashGenesisBlock == uint256S("0xcd1d3eba1ed28e2b21f6f63d45861612003fe7ab7be1177316a6308bdb32fec0"));
-        assert(genesis.hashMerkleRoot == uint256S("0x63f1cdf1b5d523653bac0fa1e1b61ac93a625fe9e0f2cab722164fe403de096c"));
+        assert(consensus.hashGenesisBlock == uint256S("0x0c3baaee84ce6eed273b83fda7adb5f7481ae1d96acb25832e90478678ecce8b"));
+        assert(genesis.hashMerkleRoot == uint256S("0x0b58bf0eac506e7bcf626a900c8e44ed3ea4ce7b34f96acd8d2ff9bb87e5a94e"));
 
         vFixedSeeds.clear();
         vSeeds.clear();

@@ -14,49 +14,30 @@
 #include <map>
 #include <string>
 #include <vector>
-#include <mutex>
-#include <condition_variable>
 
 #include <boost/filesystem/path.hpp>
-#include <liblmdb/lmdb.h>
 
-static const int ChecksumOfDBPtr = 12345;
+#include <db_cxx.h>
+
 static const unsigned int DEFAULT_WALLET_DBLOGSIZE = 100;
 static const bool DEFAULT_WALLET_PRIVDB = true;
 
-class CDB;
-class CDBTransact;
-/////////////////////////////////////////////////////////////////////////////////////////////////////
 class CDBEnv
 {
-    friend class CDBTransact;
 private:
-
-    int  checksum_;
     bool fDbEnvInit;
     bool fMockDb;
     // Don't change into boost::filesystem::path, as that can result in
     // shutdown problems/crashes caused by a static initialized internal pointer.
     std::string strPath;
-    std::mutex lock;
-    std::condition_variable open_notify;
-    unsigned open_transactions;
-    std::atomic_uint transaction_iteration;
-    std::condition_variable resize_notify;
-    std::atomic_bool resizing;
-    std::function <void()> sizing_action;
 
     void EnvShutdown();
-    void handle_environment_sizing();
-    void add_transaction();
-    void remove_transaction();
-    bool isRefValid() const { return 0 == memcmp(&checksum_,&ChecksumOfDBPtr,4); }
 
 public:
     mutable CCriticalSection cs_db;
-    MDB_env* environment;
+    DbEnv *dbenv;
     std::map<std::string, int> mapFileUseCount;
-    std::multimap<std::string, CDB*> mapDb;
+    std::map<std::string, Db*> mapDb;
 
     CDBEnv();
     ~CDBEnv();
@@ -74,6 +55,7 @@ public:
     enum VerifyResult { VERIFY_OK,
                         RECOVER_OK,
                         RECOVER_FAIL };
+    VerifyResult Verify(const std::string& strFile, bool (*recoverFunc)(CDBEnv& dbenv, const std::string& strFile));
     /**
      * Salvage data from a file that Verify says is bad.
      * fAggressive sets the DB_AGGRESSIVE flag (see berkeley DB->verify() method documentation).
@@ -82,133 +64,118 @@ public:
      * for huge databases.
      */
     typedef std::pair<std::vector<unsigned char>, std::vector<unsigned char> > KeyValPair;
+    bool Salvage(const std::string& strFile, bool fAggressive, std::vector<KeyValPair>& vResult);
 
     bool Open(const boost::filesystem::path& path);
     void Close();
     void Flush(bool fShutdown);
-    void CheckpointLSN(const std::string& name);
-    void CloseDb(const std::string& name);
+    void CheckpointLSN(const std::string& strFile);
 
-    /**
-    * Returns true if opened database removed with success 
-    * Otherwise database may be shared with another thread (use CloseDb before to obtain the reference counter)
-    */
-    bool RemoveDb(const std::string& name);
+    void CloseDb(const std::string& strFile);
+    bool RemoveDb(const std::string& strFile);
 
-    CDBTransact* TxnBegin(bool readonly);
+    DbTxn* TxnBegin(int flags = DB_TXN_WRITE_NOSYNC)
+    {
+        DbTxn* ptxn = NULL;
+        int ret = dbenv->txn_begin(NULL, &ptxn, flags);
+        if (!ptxn || ret != 0)
+            return NULL;
+        return ptxn;
+    }
 };
 
 extern CDBEnv bitdb;
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-class CDBTransact
-{
-    friend class CDBEnv;
-private:
-    CDBTransact(CDBEnv& parent, MDB_txn* transaction) : parent_(parent), transaction_(transaction) {}
-    ~CDBTransact() {}
-    MDB_txn* transaction_;
-    CDBEnv& parent_;
-public:
-    MDB_txn* get() const { return transaction_; };
-    void release() {
-        if (parent_.isRefValid())
-            parent_.remove_transaction();
-        delete this;
-    }
-};
 
-/////////////////////////////////////////////////////////////////////////////////////////////////////
-// RAII class that provides access to a Berkeley database
+/** RAII class that provides access to a Berkeley database */
 class CDB
 {
-    friend class CDBEnv;
-
 protected:
-    MDB_dbi db_;
-    std::string strName;
-    CDBTransact* activeTxn;
+    Db* pdb;
+    std::string strFile;
+    DbTxn* activeTxn;
     bool fReadOnly;
     bool fFlushOnClose;
 
-    explicit CDB(const std::string& name, const char* pszMode = "r+", bool fFlushOnCloseIn=true);
-    ~CDB();
+    explicit CDB(const std::string& strFilename, const char* pszMode = "r+", bool fFlushOnCloseIn=true);
+    ~CDB() { Close(); }
 
 public:
     void Flush();
-    /**
-    * Close returns ref counter opened database in another threads
-    */
-    int  Close();
+    void Close();
 
 private:
     CDB(const CDB&);
+    void operator=(const CDB&);
 
 protected:
-
-    MDB_txn* getTx()
-    {
-        if (activeTxn == NULL) TxnBegin();
-        return activeTxn ? activeTxn->get() : NULL;
-    }
-
     template <typename K, typename T>
     bool Read(const K& key, T& value)
     {
-        if (db_ == 0)
+        if (!pdb)
             return false;
 
         // Key
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
         ssKey.reserve(1000);
         ssKey << key;
-        MDB_val datKey = { ssKey.size(), ssKey.data() };
-        MDB_val constData = {0};
-        auto status = mdb_get(getTx(), db_, &datKey, &constData);
-        memset(datKey.mv_data, 0, datKey.mv_size);
-        if (constData.mv_size > 0 && constData.mv_data != NULL)
-        {
-            try {
-                CDataStream ssValue((char*)constData.mv_data, (char*)constData.mv_data + constData.mv_size, SER_DISK, CLIENT_VERSION);
-                ssValue >> value;
-            }
-            catch (const std::exception&) { return false; }
+        Dbt datKey(ssKey.data(), ssKey.size());
+
+        // Read
+        Dbt datValue;
+        datValue.set_flags(DB_DBT_MALLOC);
+        int ret = pdb->get(activeTxn, &datKey, &datValue, 0);
+        memset(datKey.get_data(), 0, datKey.get_size());
+        if (datValue.get_data() == NULL)
+            return false;
+
+        // Unserialize value
+        try {
+            CDataStream ssValue((char*)datValue.get_data(), (char*)datValue.get_data() + datValue.get_size(), SER_DISK, CLIENT_VERSION);
+            ssValue >> value;
+        } catch (const std::exception&) {
+            return false;
         }
-        return (status == 0);
+
+        // Clear and free memory
+        memset(datValue.get_data(), 0, datValue.get_size());
+        free(datValue.get_data());
+        return (ret == 0);
     }
 
-    template <typename K, typename T> bool Write(const K& key, const T& value, bool fOverwrite = true)
+    template <typename K, typename T>
+    bool Write(const K& key, const T& value, bool fOverwrite = true)
     {
-        if (db_ == 0)
+        if (!pdb)
             return false;
-        if (fReadOnly == true)
+        if (fReadOnly)
             assert(!"Write called on database in read-only mode");
 
         // Key
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
         ssKey.reserve(1000);
         ssKey << key;
-        MDB_val datKey = { ssKey.size(), ssKey.data() };
+        Dbt datKey(ssKey.data(), ssKey.size());
 
         // Value
         CDataStream ssValue(SER_DISK, CLIENT_VERSION);
         ssValue.reserve(10000);
         ssValue << value;
-        MDB_val datValue = { ssValue.size(), ssValue.data() };
+        Dbt datValue(ssValue.data(), ssValue.size());
 
         // Write
-        auto status = mdb_put(getTx(), db_, &datKey, &datValue, fOverwrite ? 0 : MDB_NOOVERWRITE);
+        int ret = pdb->put(activeTxn, &datKey, &datValue, (fOverwrite ? 0 : DB_NOOVERWRITE));
 
         // Clear memory in case it was a private key
-        memset(datKey.mv_data, 0, datKey.mv_size);
-        memset(datValue.mv_data, 0, datValue.mv_size);
-        return (status == 0);
+        memset(datKey.get_data(), 0, datKey.get_size());
+        memset(datValue.get_data(), 0, datValue.get_size());
+        return (ret == 0);
     }
 
     template <typename K>
     bool Erase(const K& key)
     {
-        if (db_ == 0)
+        if (!pdb)
             return false;
         if (fReadOnly)
             assert(!"Erase called on database in read-only mode");
@@ -217,79 +184,88 @@ protected:
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
         ssKey.reserve(1000);
         ssKey << key;
-        MDB_val datKey = { ssKey.size(), ssKey.data() };
+        Dbt datKey(ssKey.data(), ssKey.size());
 
         // Erase
-        auto status = mdb_del(getTx(), db_, &datKey, NULL);
+        int ret = pdb->del(activeTxn, &datKey, 0);
 
         // Clear memory
-        memset(datKey.mv_data, 0, datKey.mv_size);
-        return (status == 0 || status == MDB_NOTFOUND);
+        memset(datKey.get_data(), 0, datKey.get_size());
+        return (ret == 0 || ret == DB_NOTFOUND);
     }
 
     template <typename K>
     bool Exists(const K& key)
     {
-        if (db_ == 0)
+        if (!pdb)
             return false;
 
         // Key
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
         ssKey.reserve(1000);
         ssKey << key;
-        MDB_val datKey = { ssKey.size(), ssKey.data() };
+        Dbt datKey(ssKey.data(), ssKey.size());
 
         // Exists
-        MDB_val constData = { 0 };
-        auto status = mdb_get(getTx(), db_, &datKey, &constData);
+        int ret = pdb->exists(activeTxn, &datKey, 0);
 
         // Clear memory
-        memset(datKey.mv_data, 0, datKey.mv_size);
-        return (status == 0);
+        memset(datKey.get_data(), 0, datKey.get_size());
+        return (ret == 0);
     }
 
-    MDB_cursor* GetCursor()
+    Dbc* GetCursor()
     {
-        if (0 == db_)
+        if (!pdb)
             return NULL;
-        MDB_cursor* pcursor = NULL;
-        auto status = mdb_cursor_open(getTx(), db_, &pcursor);
-        return (status == 0 ? pcursor : NULL);
+        Dbc* pcursor = NULL;
+        int ret = pdb->cursor(NULL, &pcursor, 0);
+        if (ret != 0)
+            return NULL;
+        return pcursor;
     }
 
-    int ReadAtCursor(MDB_cursor* pcursor, CDataStream& ssKey, CDataStream& ssValue, bool setRange = false)
+    int ReadAtCursor(Dbc* pcursor, CDataStream& ssKey, CDataStream& ssValue, bool setRange = false)
     {
         // Read at cursor
-        MDB_cursor_op op = MDB_NEXT;
-        MDB_val datKey = {0};
+        Dbt datKey;
+        unsigned int fFlags = DB_NEXT;
         if (setRange) {
-            datKey = { ssKey.size(), ssKey.data() };
-            op = MDB_SET_RANGE;
+            datKey.set_data(ssKey.data());
+            datKey.set_size(ssKey.size());
+            fFlags = DB_SET_RANGE;
         }
-
-        MDB_val datValue = {0};
-        auto status = mdb_cursor_get(pcursor, &datKey, &datValue, op);
-        if (status != 0)
-            return status;
-        else if (datKey.mv_size == 0 || datValue.mv_size == 0 || datKey.mv_data == NULL  || datValue.mv_data == NULL)
+        Dbt datValue;
+        datKey.set_flags(DB_DBT_MALLOC);
+        datValue.set_flags(DB_DBT_MALLOC);
+        int ret = pcursor->get(&datKey, &datValue, fFlags);
+        if (ret != 0)
+            return ret;
+        else if (datKey.get_data() == NULL || datValue.get_data() == NULL)
             return 99999;
 
         // Convert to streams
         ssKey.SetType(SER_DISK);
         ssKey.clear();
-        ssKey.write((char*)datKey.mv_data, datKey.mv_size);
+        ssKey.write((char*)datKey.get_data(), datKey.get_size());
         ssValue.SetType(SER_DISK);
         ssValue.clear();
-        ssValue.write((char*)datValue.mv_data, datValue.mv_size);
+        ssValue.write((char*)datValue.get_data(), datValue.get_size());
+
+        // Clear and free memory
+        memset(datKey.get_data(), 0, datKey.get_size());
+        memset(datValue.get_data(), 0, datValue.get_size());
+        free(datKey.get_data());
+        free(datValue.get_data());
         return 0;
     }
 
 public:
     bool TxnBegin()
     {
-        if (bitdb.environment == NULL || activeTxn)
+        if (!pdb || activeTxn)
             return false;
-        CDBTransact* ptxn = bitdb.TxnBegin(fReadOnly);
+        DbTxn* ptxn = bitdb.TxnBegin();
         if (!ptxn)
             return false;
         activeTxn = ptxn;
@@ -298,22 +274,20 @@ public:
 
     bool TxnCommit()
     {
-        if (db_ == 0 || !activeTxn)
+        if (!pdb || !activeTxn)
             return false;
-        auto status = mdb_txn_commit(activeTxn->get());
-        activeTxn->release();
+        int ret = activeTxn->commit(0);
         activeTxn = NULL;
-        return (status == 0);
+        return (ret == 0);
     }
 
     bool TxnAbort()
     {
-        if (db_ == 0 || !activeTxn)
+        if (!pdb || !activeTxn)
             return false;
-        mdb_txn_abort(activeTxn->get());
-        activeTxn->release();
+        int ret = activeTxn->abort();
         activeTxn = NULL;
-        return true;
+        return (ret == 0);
     }
 
     bool ReadVersion(int& nVersion)
@@ -326,6 +300,8 @@ public:
     {
         return Write(std::string("version"), nVersion);
     }
+
+    bool static Rewrite(const std::string& strFile, const char* pszSkip = NULL);
 };
 
 #endif  /* __wallet_db_h__ */

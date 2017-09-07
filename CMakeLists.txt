@@ -162,11 +162,17 @@ set (SIGE_GUI  ON CACHE BOOL "")
 set (SIGE_TEST ON CACHE BOOL "")
 set (MSVC_RUNTIME "static")
 
-
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING
       "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif(NOT CMAKE_BUILD_TYPE)
+
+
+# Berkeley DB
+add_subdirectory (db-4.8.30)
+
+
+# Setup Sigecoin
 
 if (WIN32)
         configure_msvc_runtime()
@@ -196,15 +202,17 @@ else (WIN32)
 	set (PLATFORM_GUI_TARGET_PROPERTIES "")
 endif (WIN32)
 
-if (APPLE)
-	set (PLATFORM_LINK_FLAGS "-framework Foundation -framework OpenCL")
-elseif (WIN32)
-	set (PLATFORM_LINK_FLAGS "")
-        set (PLATFORM_SPECIFIC_LIBS WS2_32.lib)
-        set (PLATFORM_SPECIFIC_GUI_LIBS WS2_32.lib opengl32.lib Shlwapi.lib Imm32.lib Winmm.lib)
-else ()
-	set (PLATFORM_LINK_FLAGS "-static-libgcc -static-libstdc++")
-endif (APPLE)
+if (WIN32)
+    set (PLATFORM_LINK_FLAGS "")
+    set (PLATFORM_SPECIFIC_LIBS WS2_32.lib)
+    set (PLATFORM_SPECIFIC_GUI_LIBS WS2_32.lib opengl32.lib Shlwapi.lib Imm32.lib Winmm.lib)
+    include_directories (${CMAKE_SOURCE_DIR} ${libdb_SOURCE_DIR} ${libdb_SOURCE_DIR}/build_windows)
+else (WIN32)
+    set (PLATFORM_LINK_FLAGS "-static-libgcc -static-libstdc++")
+    include_directories (${CMAKE_SOURCE_DIR} ${libdb_SOURCE_DIR} ${libdb_SOURCE_DIR}/build_unix)
+endif (WIN32)
+
+# Setup OpenSSL libraries
 
 find_package(OpenSSL)
 if (OPENSSL_FOUND)
@@ -234,7 +242,6 @@ if (SIGE_GUI)
 	include_directories (${Qt5Core_INCLUDE_DIRS} ${Qt5Gui_INCLUDE_DIRS} ${Qt5Network_INCLUDE_DIRS} ${Qt5Widgets_INCLUDE_DIRS} ${Qt5Test_INCLUDE_DIRS})
 endif (SIGE_GUI)
 
-include_directories (${CMAKE_SOURCE_DIR})
 
 set(Boost_USE_STATIC_LIBS ON)
 set(Boost_USE_MULTITHREAD ON)
@@ -256,13 +263,9 @@ find_package(Boost COMPONENTS
 
 include_directories (${Boost_INCLUDE_DIR})
 
+
 add_subdirectory (secp256k1)
 add_subdirectory (leveldb)
-
-add_library (lmdb
-	liblmdb/lmdb.h
-	liblmdb/mdb.c
-	liblmdb/midl.c)
 
 add_library (univalue
         univalue/univalue.cpp
@@ -328,7 +331,7 @@ add_library (wallet
         sige/wallet/wallet_util.h
         )
 set_target_properties(wallet PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS}")
-target_include_directories(wallet PRIVATE ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/sige/wallet ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${sige_SOURCE_DIR}/univalue)
+target_include_directories(wallet PRIVATE ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/sige/wallet ${libdb_INCLUDES} ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${sige_SOURCE_DIR}/univalue)
 
 
 set (SRC_CORE
@@ -587,7 +590,7 @@ add_library (sigecoin
         )
 
 set_target_properties (sigecoin PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS}")
-target_include_directories(sigecoin PUBLIC ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/univalue ${secp256k1_SOURCE_DIR} ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${libevent_SOURCE_DIR}/include ${libevent_BINARY_DIR}/include)
+target_include_directories(sigecoin PUBLIC ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/univalue ${libdb_INCLUDES} ${secp256k1_SOURCE_DIR} ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${libevent_SOURCE_DIR}/include ${libevent_BINARY_DIR}/include)
 add_dependencies(sigecoin crypto wallet univalue secp256k1 leveldb event_core_static event_extra_static event_openssl_static)
 
 add_executable (bench
@@ -627,10 +630,10 @@ set_target_properties (bench PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
 set_target_properties (sigenode sigenode-cli sigenode-tx PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
 set_target_properties (sigenode sigenode-cli sigenode-tx PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
 
-target_link_libraries (sigenode sigecoin crypto wallet univalue  secp256k1 leveldb lmdb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+target_link_libraries (sigenode sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 target_link_libraries (sigenode-cli sigecoin crypto wallet univalue secp256k1 event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 target_link_libraries (sigenode-tx sigecoin crypto wallet univalue secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
-target_link_libraries (bench sigecoin crypto wallet univalue secp256k1 leveldb lmdb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+target_link_libraries (bench sigecoin crypto wallet univalue secp256k1 libdb leveldb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 
 if (SIGE_TEST)
         add_executable (tests
@@ -682,7 +685,6 @@ if (SIGE_TEST)
                 test/test_random.h
                 test/test_sigecoin.cpp
                 test/test_sigecoin.h
-                test/test_sigecoin_fuzzy.cpp
                 test/testutil.cpp
                 test/testutil.h
                 test/timedata_tests.cpp
@@ -697,7 +699,7 @@ if (SIGE_TEST)
 
 	set_target_properties (tests PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
 	set_target_properties (tests PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
-	target_link_libraries (tests sigecoin crypto wallet univalue secp256k1 leveldb lmdb event_core_static event_extra_static event_openssl_static ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+	target_link_libraries (tests sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 
         add_executable (tests_crypto
                 sige/crypto/ctaes/ctaes.c
@@ -722,7 +724,8 @@ if (SIGE_TEST)
                 )
 	set_target_properties (tests_wallet PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
 	set_target_properties (tests_wallet PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
-	target_link_libraries (tests_wallet sigecoin crypto wallet univalue secp256k1 leveldb lmdb event_core_static event_extra_static event_openssl_static ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+        target_include_directories(tests_wallet PRIVATE ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/sige/wallet ${libdb_INCLUDES} ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${sige_SOURCE_DIR}/univalue)
+	target_link_libraries (tests_wallet sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 endif (SIGE_TEST)
 
 
@@ -892,8 +895,8 @@ if (SIGE_GUI)
         PROTOBUF_GENERATE_CPP(PROTO_SRC PROTO_HDR sige/qt/paymentrequest.proto)
 
 	# Wallet sources
-	source_group("res"	    FILES ${QT_RES} EXCLUDE ${QT_QRC})
-	source_group("ui"	    FILES ${UI_HEADERS} EXCLUDE ${QT_UI})
+	source_group("res" FILES ${QT_RES} EXCLUDE ${QT_QRC})
+	source_group("ui" FILES ${UI_HEADERS} EXCLUDE ${QT_UI})
 
 	add_executable (sigecoin_qt ${PLATFORM_GUI_TARGET_PROPERTIES}
 		${QT_HEADERS}
@@ -942,7 +945,7 @@ if (SIGE_GUI)
 	# Setup QT wallet properties
 	set_target_properties (sigecoin_qt PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS} /LIBPATH:${QT_LIB_PATH}")
 	set_target_properties (sigecoin_qt PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_STATICPLUGIN -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
-	target_link_libraries (sigecoin_qt sigecoin crypto wallet univalue secp256k1 leveldb lmdb event_core_static event_extra_static event_openssl_static ${PROTOBUF_LIBRARIES} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS} Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType)
+	target_link_libraries (sigecoin_qt sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${PROTOBUF_LIBRARIES} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS} Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType)
 
         set (QT_TESTS
 		sige/qt/bantablemodel.cpp
@@ -1001,7 +1004,7 @@ if (SIGE_GUI)
         add_dependencies(sigecoin_qt_test sigecoin_qt)
 	set_target_properties (sigecoin_qt_test PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS} /LIBPATH:${QT_LIB_PATH}")
 	set_target_properties (sigecoin_qt_test PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_STATICPLUGIN -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
-	target_link_libraries (sigecoin_qt_test sigecoin crypto wallet univalue secp256k1 leveldb lmdb event_core_static event_extra_static event_openssl_static ${PROTOBUF_LIBRARIES} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS} Qt5::Core Qt5::Network Qt5::Widgets Qt5::Test Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType)
+	target_link_libraries (sigecoin_qt_test sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${PROTOBUF_LIBRARIES} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS} Qt5::Core Qt5::Network Qt5::Widgets Qt5::Test Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType)
 
 endif (SIGE_GUI)
 

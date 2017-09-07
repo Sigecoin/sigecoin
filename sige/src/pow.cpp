@@ -86,8 +86,12 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits, const Consensus::Params&
         return false;
 
     // Check proof of work matches claimed amount
-    if (UintToArith256(hash) > bnTarget)
-        return false;
+    std::string hashHex = hash.ToHexString();
+    uint256 comp = UintToArith256(hash);
+    
+    if (comp > bnTarget)
+        //!!!remove after chain be ready
+        return true/*false*/;
 
     return true;
 }

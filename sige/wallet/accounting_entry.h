@@ -51,7 +51,7 @@ public:
         READWRITE(nTime);
         READWRITE(LIMITED_STRING(strOtherAccount, 65536));
 
-        if (!ser_action.ForRead())
+        if (!ser_action.ForRead() && nOrderPos >= 0)
         {
             WriteOrderPos(nOrderPos, mapValue);
 

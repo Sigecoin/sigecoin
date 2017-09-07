@@ -7,7 +7,6 @@
 
 #include "amount.h"
 #include "primitives/transaction.h"
-#include "wallet/db.h"
 #include "key.h"
 
 #include <list>
@@ -111,6 +110,8 @@ public:
     }
 };
 
+#include "wallet/db.h"
+
 /** Access to the wallet database */
 class CWalletDB : public CDB
 {
@@ -169,6 +170,9 @@ public:
     DBErrors FindWalletTx(CWallet* pwallet, std::vector<uint256>& vTxHash, std::vector<CWalletTx>& vWtx);
     DBErrors ZapWalletTx(CWallet* pwallet, std::vector<CWalletTx>& vWtx);
     DBErrors ZapSelectTx(CWallet* pwallet, std::vector<uint256>& vHashIn, std::vector<uint256>& vHashOut);
+    static bool Recover(CDBEnv& dbenv, const std::string& filename, bool fOnlyKeys);
+    static bool Recover(CDBEnv& dbenv, const std::string& filename);
+
     //! write the hdchain model (external chain child index counter)
     bool WriteHDChain(const CHDChain& chain);
 

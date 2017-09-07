@@ -1,5 +1,4 @@
-﻿// Copyright (c) 2010 Satoshi Nakamoto
-// Copyright (c) 2009-2016 The Bitcoin Core developers
+// Copyright (c) 2017 SIGE developer
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -56,8 +55,8 @@ public:
         std::string h1 = consensus.hashGenesisBlock.ToHexString();
         std::string h2 = genesis.hashMerkleRoot.ToHexString();
 
-        assert(consensus.hashGenesisBlock == uint256S("0x571c72dd8dd8afeab89458db5410bb8a85a74f0c0aa069bf38a426428f8b91ef"));
-        assert(genesis.hashMerkleRoot == uint256S("0x63f1cdf1b5d523653bac0fa1e1b61ac93a625fe9e0f2cab722164fe403de096c"));
+        assert(consensus.hashGenesisBlock == uint256S("0x2ede78e7599578eb79020e139bdc437fedac3670c7a5140535d2eb511b9c29cc"));
+        assert(genesis.hashMerkleRoot == uint256S("0x0b58bf0eac506e7bcf626a900c8e44ed3ea4ce7b34f96acd8d2ff9bb87e5a94e"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.
