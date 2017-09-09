@@ -69,13 +69,13 @@ public:
         nDefaultPort = 8560;
         nPruneAfterHeight = 100000;
 
-        genesis = CChainParamsUtil::CreateGenesisBlock(1504197832, 2084524493, 0x1e0ffff0, 1, 5 * COIN);
+        genesis = CChainParamsUtil::CreateGenesisBlock(1504197832, 2084524493, 0x1e0ffff0, 1, 55 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         std::string h1 = consensus.hashGenesisBlock.ToHexString();
         std::string h2 = genesis.hashMerkleRoot.ToHexString();
 
-        assert(consensus.hashGenesisBlock == uint256S("0x002f1115a15c70adf4e3b728d06b44607c4fb6cb4fd36f9754ec271c9d93d618"));
-        assert(genesis.hashMerkleRoot == uint256S("0x0b58bf0eac506e7bcf626a900c8e44ed3ea4ce7b34f96acd8d2ff9bb87e5a94e"));
+        assert(consensus.hashGenesisBlock == uint256S("0x01142a6a09205a1b00284b8ab6869bcb8411a21f3b945228ecb59354013fe737"));
+        assert(genesis.hashMerkleRoot == uint256S("0x98c41170a2d0620725cd756b78b482a74806a7b9887fe27d0fb797c1eddd6893"));
 
         // Note that of those with the service bits flag, most only support a subset of possible options
         vSeeds.push_back(CDNSSeedData("localhost", "127.0.0.1", false));     // loopback
@@ -94,7 +94,7 @@ public:
         fMineBlocksOnDemand = true;
 
         MapCheckpoints tmp = boost::assign::map_list_of
-        (0, uint256S("0x002f1115a15c70adf4e3b728d06b44607c4fb6cb4fd36f9754ec271c9d93d618"));
+        (0, uint256S("0x01142a6a09205a1b00284b8ab6869bcb8411a21f3b945228ecb59354013fe737"));
         checkpointData = CCheckpointData(tmp);
 
         chainTxData = ChainTxData{

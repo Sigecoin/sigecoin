@@ -55,13 +55,13 @@ public:
         nDefaultPort = 18560;
         nPruneAfterHeight = 1000;
 
-        genesis = CChainParamsUtil::CreateGenesisBlock(1501573267, 414098458, 0x1c0ffff0, 1, 5 * COIN);
+        genesis = CChainParamsUtil::CreateGenesisBlock(1501573267, 414098458, 0x1e0ffff0, 1, 55 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         std::string h1 = consensus.hashGenesisBlock.ToHexString();
         std::string h2 = genesis.hashMerkleRoot.ToHexString();
 
-        assert(consensus.hashGenesisBlock == uint256S("0x0c3baaee84ce6eed273b83fda7adb5f7481ae1d96acb25832e90478678ecce8b"));
-        assert(genesis.hashMerkleRoot == uint256S("0x0b58bf0eac506e7bcf626a900c8e44ed3ea4ce7b34f96acd8d2ff9bb87e5a94e"));
+        assert(consensus.hashGenesisBlock == uint256S("0x5840d6305f69654b90c3fcf0a9eaa59565e690be0c9896c4d294d0d494af980f"));
+        assert(genesis.hashMerkleRoot == uint256S("0x98c41170a2d0620725cd756b78b482a74806a7b9887fe27d0fb797c1eddd6893"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -82,7 +82,7 @@ public:
         fMineBlocksOnDemand = false;
 
         MapCheckpoints tmp = boost::assign::map_list_of
-        (0, uint256S("c08af7be0de8a97a5ee09979c02c5122dc1d077e243600ccd189f19c545722c4"));
+        (0, uint256S("0x5840d6305f69654b90c3fcf0a9eaa59565e690be0c9896c4d294d0d494af980f"));
         checkpointData = CCheckpointData(tmp);
 
         chainTxData = ChainTxData{

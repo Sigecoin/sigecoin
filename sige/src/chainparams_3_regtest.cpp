@@ -50,13 +50,13 @@ public:
         nDefaultPort = 8561;
         nPruneAfterHeight = 1000;
 
-        genesis = CChainParamsUtil::CreateGenesisBlock(1501573267, 0, 0x207fffff, 1, 5 * COIN);
+        genesis = CChainParamsUtil::CreateGenesisBlock(1501573267, 1, 0x207fffff, 1, 55 * COIN);
         consensus.hashGenesisBlock = genesis.GetHash();
         std::string h1 = consensus.hashGenesisBlock.ToHexString();
         std::string h2 = genesis.hashMerkleRoot.ToHexString();
 
-        assert(consensus.hashGenesisBlock == uint256S("0x2ede78e7599578eb79020e139bdc437fedac3670c7a5140535d2eb511b9c29cc"));
-        assert(genesis.hashMerkleRoot == uint256S("0x0b58bf0eac506e7bcf626a900c8e44ed3ea4ce7b34f96acd8d2ff9bb87e5a94e"));
+        assert(consensus.hashGenesisBlock == uint256S("0xa606103d6bd5df7a33de58dd21a08019c8c283f32c62eeaae3c8445fd1e4d1ed"));
+        assert(genesis.hashMerkleRoot == uint256S("0x98c41170a2d0620725cd756b78b482a74806a7b9887fe27d0fb797c1eddd6893"));
 
         vFixedSeeds.clear(); //!< Regtest mode doesn't have any fixed seeds.
         vSeeds.clear();      //!< Regtest mode doesn't have any DNS seeds.

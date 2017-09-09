@@ -490,7 +490,7 @@ std::string HelpMessage(HelpMessageMode mode)
 std::string LicenseInfo()
 {
     const std::string URL_SOURCE_CODE = "<https://github.com/sigecoin/sigecoin>";
-    const std::string URL_WEBSITE = "<https://sigecoin.net>";
+    const std::string URL_WEBSITE = "<https://sigecoin.org>";
 
     return CopyrightHolders(strprintf(_("Copyright (C) %i-%i"), 2017, COPYRIGHT_YEAR) + " ") + "\n" +
            "\n" +
@@ -867,7 +867,7 @@ bool AppInitParameterInteraction()
 
     // ********************************************************* Step 3: parameter-to-internal-flags
 
-    fDebug = mapMultiArgs.count("-debug");
+    fDebug = mapMultiArgs.count("-debug") > 0;
     // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
     if (fDebug) {
         const std::vector<std::string>& categories = mapMultiArgs.at("-debug");

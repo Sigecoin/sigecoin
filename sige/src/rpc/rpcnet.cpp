@@ -204,8 +204,8 @@ UniValue addnode(const JSONRPCRequest& request)
             "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
             "2. \"command\"  (string, required) 'add' to add a node to the list, 'remove' to remove a node from the list, 'onetry' to try a connection to the node once\n"
             "\nExamples:\n"
-            + HelpExampleCli("addnode", "\"192.168.0.6:8333\" \"onetry\"")
-            + HelpExampleRpc("addnode", "\"192.168.0.6:8333\", \"onetry\"")
+            + HelpExampleCli("addnode", "\"192.168.1.100:8560\" \"onetry\"")
+            + HelpExampleRpc("addnode", "\"192.168.1.100:8560\", \"onetry\"")
         );
 
     if(!g_connman)
@@ -243,8 +243,8 @@ UniValue disconnectnode(const JSONRPCRequest& request)
             "\nArguments:\n"
             "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
             "\nExamples:\n"
-            + HelpExampleCli("disconnectnode", "\"192.168.0.6:8333\"")
-            + HelpExampleRpc("disconnectnode", "\"192.168.0.6:8333\"")
+            + HelpExampleCli("disconnectnode", "\"192.168.1.100:8560\"")
+            + HelpExampleRpc("disconnectnode", "\"192.168.1.100:8560\"")
         );
 
     if(!g_connman)
@@ -269,11 +269,11 @@ UniValue getaddednodeinfo(const JSONRPCRequest& request)
             "\nResult:\n"
             "[\n"
             "  {\n"
-            "    \"addednode\" : \"192.168.0.201\",   (string) The node ip address or name (as provided to addnode)\n"
+            "    \"addednode\" : \"192.168.1.201\",   (string) The node ip address or name (as provided to addnode)\n"
             "    \"connected\" : true|false,          (boolean) If connected\n"
             "    \"addresses\" : [                    (list of objects) Only when connected = true\n"
             "       {\n"
-            "         \"address\" : \"192.168.0.201:8333\",  (string) The sigecoin server IP and port we're connected to\n"
+            "         \"address\" : \"192.168.1.201:8560\",  (string) The sigecoin server IP and port we're connected to\n"
             "         \"connected\" : \"outbound\"           (string) connection, inbound or outbound\n"
             "       }\n"
             "     ]\n"
@@ -282,8 +282,8 @@ UniValue getaddednodeinfo(const JSONRPCRequest& request)
             "]\n"
             "\nExamples:\n"
             + HelpExampleCli("getaddednodeinfo", "true")
-            + HelpExampleCli("getaddednodeinfo", "true \"192.168.0.201\"")
-            + HelpExampleRpc("getaddednodeinfo", "true, \"192.168.0.201\"")
+            + HelpExampleCli("getaddednodeinfo", "true \"192.168.1.201\"")
+            + HelpExampleRpc("getaddednodeinfo", "true, \"192.168.1.201\"")
         );
 
     if(!g_connman)
@@ -483,9 +483,9 @@ UniValue setban(const JSONRPCRequest& request)
                             "3. \"bantime\"      (numeric, optional) time in seconds how long (or until when if [absolute] is set) the ip is banned (0 or empty means using the default time of 24h which can also be overwritten by the -bantime startup argument)\n"
                             "4. \"absolute\"     (boolean, optional) If set, the bantime must be a absolute timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
                             "\nExamples:\n"
-                            + HelpExampleCli("setban", "\"192.168.0.6\" \"add\" 86400")
-                            + HelpExampleCli("setban", "\"192.168.0.0/24\" \"add\"")
-                            + HelpExampleRpc("setban", "\"192.168.0.6\", \"add\", 86400")
+                            + HelpExampleCli("setban", "\"192.168.1.100\" \"add\" 86400")
+                            + HelpExampleCli("setban", "\"192.168.1.0/24\" \"add\"")
+                            + HelpExampleRpc("setban", "\"192.168.1.100\", \"add\", 86400")
                             );
     if(!g_connman)
         throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");

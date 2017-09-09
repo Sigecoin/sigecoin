@@ -45,13 +45,6 @@
 #include <boost/math/distributions/poisson.hpp>
 #include <boost/thread.hpp>
 
-/*
-#if defined(NDEBUG)
-# error "Sigecoin cannot be compiled without assertions."
-#endif
-*/
-
-
 /**
  * Global state
  */
@@ -827,7 +820,7 @@ bool AcceptToMemoryPoolWorker(CTxMemPool& pool, CValidationState& state, const C
         // subsequent RemoveStaged() and addUnchecked() calls don't guarantee
         // mempool consistency for us.
         LOCK(pool.cs);
-        const bool fReplacementTransaction = setConflicts.size();
+        const bool fReplacementTransaction = setConflicts.size() > 0;
         if (fReplacementTransaction)
         {
             CFeeRate newFeeRate(nModifiedFees, nSize);
@@ -1172,7 +1165,7 @@ CAmount GetBlockSubsidy(int nHeight, const Consensus::Params& consensusParams)
     if (halvings >= 64)
         return 0;
 
-    CAmount nSubsidy = 5 * COIN;
+    CAmount nSubsidy = 55 * COIN;
     // Subsidy is cut in half every 210,000 blocks which will occur approximately every 4 years.
     nSubsidy >>= halvings;
     return nSubsidy;
@@ -2323,7 +2316,7 @@ static CBlockIndex* FindMostWorkChain() {
             // which block files have been deleted.  Remove those as candidates
             // for the most work chain if we come across them; we can't switch
             // to a chain unless we have all the non-active-chain parent blocks.
-            bool fFailedChain = pindexTest->nStatus & BLOCK_FAILED_MASK;
+            bool fFailedChain = (pindexTest->nStatus & BLOCK_FAILED_MASK) != 0;
             bool fMissingData = !(pindexTest->nStatus & BLOCK_HAVE_DATA);
             if (fFailedChain || fMissingData) {
                 // Candidate chain is not usable (either invalid or missing data)
@@ -3168,8 +3161,8 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
     // Try to process all requested blocks that we don't have, but only
     // process an unrequested block if it's new and has enough work to
     // advance our tip, and isn't too many blocks ahead.
-    bool fAlreadyHave = pindex->nStatus & BLOCK_HAVE_DATA;
-    bool fHasMoreWork = (chainActive.Tip() ? pindex->nChainWork > chainActive.Tip()->nChainWork : true);
+    bool fAlreadyHave = (pindex->nStatus & BLOCK_HAVE_DATA) != 0;
+    bool fHasMoreWork = (chainActive.Tip() ? (pindex->nChainWork > chainActive.Tip()->nChainWork != 0) : true);
     // Blocks that are too out-of-order needlessly limit the effectiveness of
     // pruning, because pruning will not delete block files that contain any
     // blocks which are too close in height to the tip.  Apply this test
@@ -3192,7 +3185,7 @@ static bool AcceptBlock(const std::shared_ptr<const CBlock>& pblock, CValidation
     }
     if (fNewBlock) *fNewBlock = true;
 
-    if (!CheckBlock(block, state, chainparams.GetConsensus(), GetAdjustedTime()) ||
+    if (!CheckBlock(block, state, chainparams.GetConsensus(), GetAdjustedTime() != 0) ||
         !ContextualCheckBlock(block, state, chainparams.GetConsensus(), pindex->pprev)) {
         if (state.IsInvalid() && !state.CorruptionPossible()) {
             pindex->nStatus |= BLOCK_FAILED_VALID;
@@ -3931,7 +3924,6 @@ bool LoadExternalBlockFile(const CChainParams& chainparams, FILE* fileIn, CDiskB
                         break;
                     }
                 }
-                std::string sss = hash.GetHex();
 
                 NotifyHeaderTip();
 

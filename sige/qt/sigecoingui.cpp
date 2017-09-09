@@ -120,7 +120,7 @@ SigecoinGUI::SigecoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle
     spinnerFrame(0),
     platformStyle(_platformStyle)
 {
-    GUIUtil::restoreWindowGeometry("nWindow", QSize(820, 550), this);
+    GUIUtil::restoreWindowGeometry("nWindow", QSize(850, 550), this);
 
     QString windowTitle = tr(PACKAGE_NAME) + " - ";
 // #ifdef ENABLE_WALLET
@@ -251,7 +251,6 @@ SigecoinGUI::SigecoinGUI(const PlatformStyle *_platformStyle, const NetworkStyle
         connect(progressBar, SIGNAL(clicked(QPoint)), this, SLOT(showModalOverlay()));
     }
 // #endif
-    setFixedWidth(1024);
 }
 
 SigecoinGUI::~SigecoinGUI()

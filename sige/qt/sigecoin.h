@@ -1,37 +1,19 @@
 // Copyright (c) 2017 SIGE developer
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef SIGE_QT_ENGINE_H
-#define SIGE_QT_ENGINE_H
 
+#ifndef __qt_sigecoin_h__
+#define __qt_sigecoin_h__
+
+#include "platformstyle.h"
 #include "scheduler.h"
-#include "warnings.h"
-#include <stdint.h>
 
 #include <QApplication>
-
-#if QT_VERSION < 0x050000
-#include <QTextCodec>
-#endif
-
-class PlatformStyle;
-class NetworkStyle;
-class SigecoinGUI;
-class ClientModel;
-class OptionsModel;
-class PaymentServer;
-class WalletModel;
-
-QT_BEGIN_NAMESPACE
-class QThread;
-class QTimer;
-QT_END_NAMESPACE
+#include <QThread>
 
 /** Class encapsulating Sigecoin startup and shutdown.
  * Allows running startup and shutdown in a different thread from the UI thread.
  */
-
-
 class SigecoinEngine: public QObject
 {
     Q_OBJECT
@@ -55,6 +37,15 @@ private:
     void handleRunawayException(const std::exception *e);
 };
 
+
+
+class ClientModel;
+class SigecoinGUI;
+class NetworkStyle;
+class OptionsModel;
+class WalletModel;
+class PaymentServer;
+
 /** Main Sigecoin application object */
 class SigecoinApplication: public QApplication
 {
@@ -63,10 +54,10 @@ public:
     explicit SigecoinApplication(int &argc, char **argv);
     ~SigecoinApplication();
 
-//#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     /// Create payment server
     void createPaymentServer();
-//#endif
+// #endif
     /// parameter interaction/setup based on rules
     void parameterSetup();
     /// Create options model
@@ -100,15 +91,15 @@ Q_SIGNALS:
     void splashFinished(QWidget *window);
 
 private:
-    QThread *coreThread;
-    OptionsModel *optionsModel;
-    ClientModel *clientModel;
-    SigecoinGUI *window;
+    QThread* coreThread;
+    OptionsModel* optionsModel;
+    ClientModel* clientModel;
+    SigecoinGUI* window;
     QTimer *pollShutdownTimer;
-//#ifdef ENABLE_WALLET
+// #ifdef ENABLE_WALLET
     PaymentServer* paymentServer;
-    WalletModel *walletModel;
-//#endif
+    WalletModel* walletModel;
+// #endif
     int returnValue;
     const PlatformStyle *platformStyle;
     std::unique_ptr<QWidget> shutdownWindow;
@@ -116,4 +107,4 @@ private:
     void startThread();
 };
 
-#endif // SIGE_QT_ENGINE
+#endif  /* __qt_sigecoin_h__ */ 
