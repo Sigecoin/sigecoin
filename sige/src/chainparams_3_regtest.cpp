@@ -5,7 +5,7 @@
 #include "chainparams.h"
 #include <assert.h>
 #include <boost/assign/list_of.hpp>
-#include "ChainParamsUtil.h"
+#include "chainparamsutil.h"
 
 /**
 * Regression test

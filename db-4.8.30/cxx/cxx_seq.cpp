@@ -19,50 +19,50 @@
 // list element (e.g., "char *arg") and that _arglist is the arguments
 // that should be passed through to the C method (e.g., "(db, arg)")
 //
-#define DBSEQ_METHOD(_name, _argspec, _arglist, _destructor)        \
-int DbSequence::_name _argspec                      \
-{                                   \
-    int ret;                            \
-    DB_SEQUENCE *seq = unwrap(this);                \
-    DbEnv *dbenv = DbEnv::get_DbEnv(seq->seq_dbp->dbenv);       \
-                                    \
-    ret = seq->_name _arglist;                  \
-    if (_destructor)                        \
-        imp_ = 0;                       \
-    if (!DB_RETOK_STD(ret))                     \
-        DB_ERROR(dbenv,                     \
-            "DbSequence::" # _name, ret, ON_ERROR_UNKNOWN); \
-    return (ret);                           \
+#define	DBSEQ_METHOD(_name, _argspec, _arglist, _destructor)		\
+int DbSequence::_name _argspec						\
+{									\
+	int ret;							\
+	DB_SEQUENCE *seq = unwrap(this);				\
+	DbEnv *dbenv = DbEnv::get_DbEnv(seq->seq_dbp->dbenv);		\
+									\
+	ret = seq->_name _arglist;					\
+	if (_destructor)						\
+		imp_ = 0;						\
+	if (!DB_RETOK_STD(ret))						\
+		DB_ERROR(dbenv,						\
+		    "DbSequence::" # _name, ret, ON_ERROR_UNKNOWN);	\
+	return (ret);							\
 }
 
 DbSequence::DbSequence(Db *db, u_int32_t flags)
-:   imp_(0)
+:	imp_(0)
 {
-    DB_SEQUENCE *seq;
-    int ret;
+	DB_SEQUENCE *seq;
+	int ret;
 
-    if ((ret = db_sequence_create(&seq, unwrap(db), flags)) != 0)
-        DB_ERROR(db->get_env(), "DbSequence::DbSequence", ret,
-            ON_ERROR_UNKNOWN);
-    else {
-        imp_ = seq;
-        seq->api_internal = this;
-    }
+	if ((ret = db_sequence_create(&seq, unwrap(db), flags)) != 0)
+		DB_ERROR(db->get_env(), "DbSequence::DbSequence", ret,
+		    ON_ERROR_UNKNOWN);
+	else {
+		imp_ = seq;
+		seq->api_internal = this;
+	}
 }
 
 DbSequence::DbSequence(DB_SEQUENCE *seq)
-:   imp_(seq)
+:	imp_(seq)
 {
-    seq->api_internal = this;
+	seq->api_internal = this;
 }
 
 DbSequence::~DbSequence()
 {
-    DB_SEQUENCE *seq;
+	DB_SEQUENCE *seq;
 
-    seq = unwrap(this);
-    if (seq != NULL)
-        (void)seq->close(seq, 0);
+	seq = unwrap(this);
+	if (seq != NULL)
+		(void)seq->close(seq, 0);
 }
 
 DBSEQ_METHOD(open, (DbTxn *txnid, Dbt *key, u_int32_t flags),
@@ -87,23 +87,23 @@ DBSEQ_METHOD(set_range, (db_seq_t min, db_seq_t max), (seq, min, max), 0)
 
 Db *DbSequence::get_db()
 {
-    DB_SEQUENCE *seq = unwrap(this);
-    DB *db;
-    (void)seq->get_db(seq, &db);
-    return Db::get_Db(db);
+	DB_SEQUENCE *seq = unwrap(this);
+	DB *db;
+	(void)seq->get_db(seq, &db);
+	return Db::get_Db(db);
 }
 
 Dbt *DbSequence::get_key()
 {
-    DB_SEQUENCE *seq = unwrap(this);
-    memset(&key_, 0, sizeof(DBT));
-    (void)seq->get_key(seq, &key_);
-    return Dbt::get_Dbt(&key_);
+	DB_SEQUENCE *seq = unwrap(this);
+	memset(&key_, 0, sizeof(DBT));
+	(void)seq->get_key(seq, &key_);
+	return Dbt::get_Dbt(&key_);
 }
 
 // static method
 DbSequence *DbSequence::wrap_DB_SEQUENCE(DB_SEQUENCE *seq)
 {
-    DbSequence *wrapped_seq = get_DbSequence(seq);
-    return (wrapped_seq != NULL) ? wrapped_seq : new DbSequence(seq);
+	DbSequence *wrapped_seq = get_DbSequence(seq);
+	return (wrapped_seq != NULL) ? wrapped_seq : new DbSequence(seq);
 }

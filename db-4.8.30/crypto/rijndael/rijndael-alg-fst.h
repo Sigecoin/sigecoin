@@ -29,12 +29,12 @@
 #ifndef __RIJNDAEL_ALG_FST_H
 #define __RIJNDAEL_ALG_FST_H
 
-#define MAXKC   (256/32)
-#define MAXKB   (256/8)
-#define MAXNR   14
+#define MAXKC	(256/32)
+#define MAXKB	(256/8)
+#define MAXNR	14
 
-typedef u_int8_t    u8;
-typedef u_int16_t   u16;
-typedef u_int32_t   u32;
+typedef u_int8_t	u8;
+typedef u_int16_t	u16;
+typedef u_int32_t	u32;
 
 #endif /* __RIJNDAEL_ALG_FST_H */

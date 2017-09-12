@@ -91,3 +91,21 @@ listen=1
 server=1
 addnode=127.0.0.1
 
+
+
+Build instructions for Ubuntu (12.0+)
+Without GUI, fullnode, cli, tx, tests.
+-----------------------------------------
+
+* Requires CMake installed (3.8 recommended)
+
+* sudo apt-get install build-essential autotools-dev autoconf pkg-config libssl-dev
+  sudo apt-get install libboost-all-dev
+  sudo apt-get install libevent-dev
+
+* Specify BOOST_ROOT environment variable in case of manual build of BOOST libraries (not earlier 1.58)
+* ./unix_build.sh
+  cd .build - change directory
+  make
+
+* bench, sigenode, sigenode-cli, sigenode-tx, tests executables and static libraries should be compiled in .build directory

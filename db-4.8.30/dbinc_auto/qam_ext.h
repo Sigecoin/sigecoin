@@ -1,6 +1,6 @@
 /* DO NOT EDIT: automatically built by dist/s_include. */
-#ifndef _qam_ext_h_
-#define _qam_ext_h_
+#ifndef	_qam_ext_h_
+#define	_qam_ext_h_
 
 #if defined(__cplusplus)
 extern "C" {

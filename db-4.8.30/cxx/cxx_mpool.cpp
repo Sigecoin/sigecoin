@@ -19,28 +19,28 @@
 // list element (e.g., "char *arg") and that _arglist is the arguments
 // that should be passed through to the C method (e.g., "(mpf, arg)")
 //
-#define DB_MPOOLFILE_METHOD(_name, _argspec, _arglist, _retok)      \
-int DbMpoolFile::_name _argspec                     \
-{                                   \
-    int ret;                            \
-    DB_MPOOLFILE *mpf = unwrap(this);               \
-                                    \
-    if (mpf == NULL)                        \
-        ret = EINVAL;                       \
-    else                                \
-        ret = mpf->_name _arglist;              \
-    if (!_retok(ret))                       \
-        DB_ERROR(DbEnv::get_DbEnv(mpf->env->dbenv),         \
-            "DbMpoolFile::"#_name, ret, ON_ERROR_UNKNOWN);  \
-    return (ret);                           \
+#define	DB_MPOOLFILE_METHOD(_name, _argspec, _arglist, _retok)		\
+int DbMpoolFile::_name _argspec						\
+{									\
+	int ret;							\
+	DB_MPOOLFILE *mpf = unwrap(this);				\
+									\
+	if (mpf == NULL)						\
+		ret = EINVAL;						\
+	else								\
+		ret = mpf->_name _arglist;				\
+	if (!_retok(ret))						\
+		DB_ERROR(DbEnv::get_DbEnv(mpf->env->dbenv), 		\
+			"DbMpoolFile::"#_name, ret, ON_ERROR_UNKNOWN);	\
+	return (ret);							\
 }
 
-#define DB_MPOOLFILE_METHOD_VOID(_name, _argspec, _arglist)     \
-void DbMpoolFile::_name _argspec                    \
-{                                   \
-    DB_MPOOLFILE *mpf = unwrap(this);               \
-                                    \
-    mpf->_name _arglist;                        \
+#define	DB_MPOOLFILE_METHOD_VOID(_name, _argspec, _arglist)		\
+void DbMpoolFile::_name _argspec					\
+{									\
+	DB_MPOOLFILE *mpf = unwrap(this);				\
+									\
+	mpf->_name _arglist;						\
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -50,7 +50,7 @@ void DbMpoolFile::_name _argspec                    \
 ////////////////////////////////////////////////////////////////////////
 
 DbMpoolFile::DbMpoolFile()
-:   imp_(0)
+:	imp_(0)
 {
 }
 
@@ -60,25 +60,25 @@ DbMpoolFile::~DbMpoolFile()
 
 int DbMpoolFile::close(u_int32_t flags)
 {
-    DB_MPOOLFILE *mpf = unwrap(this);
-    int ret;
-    DbEnv *dbenv = DbEnv::get_DbEnv(mpf->env->dbenv);
+	DB_MPOOLFILE *mpf = unwrap(this);
+	int ret;
+	DbEnv *dbenv = DbEnv::get_DbEnv(mpf->env->dbenv);
 
-    if (mpf == NULL)
-        ret = EINVAL;
-    else
-        ret = mpf->close(mpf, flags);
+	if (mpf == NULL)
+		ret = EINVAL;
+	else
+		ret = mpf->close(mpf, flags);
 
-    imp_ = 0;                   // extra safety
+	imp_ = 0;                   // extra safety
 
-    // This may seem weird, but is legal as long as we don't access
-    // any data before returning.
-    delete this;
+	// This may seem weird, but is legal as long as we don't access
+	// any data before returning.
+	delete this;
 
-    if (!DB_RETOK_STD(ret))
-        DB_ERROR(dbenv, "DbMpoolFile::close", ret, ON_ERROR_UNKNOWN);
+	if (!DB_RETOK_STD(ret))
+		DB_ERROR(dbenv, "DbMpoolFile::close", ret, ON_ERROR_UNKNOWN);
 
-    return (ret);
+	return (ret);
 }
 
 DB_MPOOLFILE_METHOD(get,

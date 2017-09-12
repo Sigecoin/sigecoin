@@ -9,6 +9,7 @@
 #include <limits>
 #include <vector>
 #include <assert.h>
+#include <stdexcept>
 
 class scriptnum_error : public std::runtime_error
 {

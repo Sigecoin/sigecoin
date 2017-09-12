@@ -5,7 +5,7 @@
  */
 /*
  * Copyright (c) 1995, 1996
- *  The President and Fellows of Harvard University.  All rights reserved.
+ *	The President and Fellows of Harvard University.  All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -35,7 +35,7 @@
  */
 
 #ifndef _DB_DISPATCH_H_
-#define _DB_DISPATCH_H_
+#define	_DB_DISPATCH_H_
 
 #if defined(__cplusplus)
 extern "C" {
@@ -47,47 +47,47 @@ extern "C" {
  * we need during recovery.
  */
 typedef enum {
-    TXNLIST_DELETE,
-    TXNLIST_LSN,
-    TXNLIST_TXNID
+	TXNLIST_DELETE,
+	TXNLIST_LSN,
+	TXNLIST_TXNID
 } db_txnlist_type;
 
-#define DB_TXNLIST_MASK(hp, n)  (n % hp->nslots)
+#define	DB_TXNLIST_MASK(hp, n)  (n % hp->nslots)
 struct __db_txnhead {
-    void *td;       /* If abort, the detail for the txn. */
-    DB_THREAD_INFO *thread_info;    /* Thread information. */
-    u_int32_t maxid;    /* Maximum transaction id. */
-    DB_LSN maxlsn;      /* Maximum commit lsn. */
-    DB_LSN ckplsn;      /* LSN of last retained checkpoint. */
-    DB_LSN trunc_lsn;   /* Lsn to which we are going to truncate;
-                 * make sure we abort anyone after this. */
-    u_int32_t generation;   /* Current generation number. */
-    u_int32_t gen_alloc;    /* Number of generations allocated. */
-    struct {
-        u_int32_t generation;
-        u_int32_t txn_min;
-        u_int32_t txn_max;
-    } *gen_array;       /* Array of txnids associated with a gen. */
-    u_int nslots;
-    LIST_HEAD(__db_headlink, __db_txnlist) head[1];
+	void *td;		/* If abort, the detail for the txn. */
+	DB_THREAD_INFO *thread_info;	/* Thread information. */
+	u_int32_t maxid;	/* Maximum transaction id. */
+	DB_LSN maxlsn;		/* Maximum commit lsn. */
+	DB_LSN ckplsn;		/* LSN of last retained checkpoint. */
+	DB_LSN trunc_lsn;	/* Lsn to which we are going to truncate;
+				 * make sure we abort anyone after this. */
+	u_int32_t generation;	/* Current generation number. */
+	u_int32_t gen_alloc;	/* Number of generations allocated. */
+	struct {
+		u_int32_t generation;
+		u_int32_t txn_min;
+		u_int32_t txn_max;
+	} *gen_array;		/* Array of txnids associated with a gen. */
+	u_int nslots;
+	LIST_HEAD(__db_headlink, __db_txnlist) head[1];
 };
 
-#define DB_LSN_STACK_SIZE 4
+#define	DB_LSN_STACK_SIZE 4
 struct __db_txnlist {
-    db_txnlist_type type;
-    LIST_ENTRY(__db_txnlist) links;
-    union {
-        struct {
-            u_int32_t txnid;
-            u_int32_t generation;
-            u_int32_t status;
-        } t;
-        struct {
-            u_int32_t stack_size;
-            u_int32_t stack_indx;
-            DB_LSN *lsn_stack;
-        } l;
-    } u;
+	db_txnlist_type type;
+	LIST_ENTRY(__db_txnlist) links;
+	union {
+		struct {
+			u_int32_t txnid;
+			u_int32_t generation;
+			u_int32_t status;
+		} t;
+		struct {
+			u_int32_t stack_size;
+			u_int32_t stack_indx;
+			DB_LSN *lsn_stack;
+		} l;
+	} u;
 };
 
 #if defined(__cplusplus)

@@ -1,6 +1,6 @@
 /* DO NOT EDIT: automatically built by dist/s_include. */
-#ifndef _mp_ext_h_
-#define _mp_ext_h_
+#ifndef	_mp_ext_h_
+#define	_mp_ext_h_
 
 #if defined(__cplusplus)
 extern "C" {
@@ -68,7 +68,7 @@ int __memp_skip_curadj __P((DBC *, db_pgno_t));
 int __memp_bh_freeze __P((DB_MPOOL *, REGINFO *, DB_MPOOL_HASH *, BH *, int *));
 int __memp_bh_thaw __P((DB_MPOOL *, REGINFO *, DB_MPOOL_HASH *, BH *, BH *));
 int __memp_open __P((ENV *, int));
-int __memp_init __P((ENV *, DB_MPOOL *, u_int, u_int32_t, u_int));
+int	__memp_init __P((ENV *, DB_MPOOL *, u_int, u_int32_t, u_int));
 u_int32_t __memp_max_regions __P((ENV *));
 u_int32_t __memp_region_mutex_count __P((ENV *));
 int __memp_env_refresh __P((ENV *));

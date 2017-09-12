@@ -20,7 +20,7 @@
 #if defined(WORDS_BIGENDIAN)
 
 #if HAVE_DECL_HTOBE16 == 0
-inline uint16_t htobe16(uint16_t host_16bits)
+inline uint16_t short htobe16(uint16_t host_16bits)
 {
     return host_16bits;
 }

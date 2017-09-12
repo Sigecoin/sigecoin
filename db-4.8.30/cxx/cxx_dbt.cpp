@@ -22,16 +22,16 @@
 
 Dbt::Dbt()
 {
-    DBT *dbt = this;
-    memset(dbt, 0, sizeof(DBT));
+	DBT *dbt = this;
+	memset(dbt, 0, sizeof(DBT));
 }
 
 Dbt::Dbt(void *data_arg, u_int32_t size_arg)
 {
-    DBT *dbt = this;
-    memset(dbt, 0, sizeof(DBT));
-    set_data(data_arg);
-    set_size(size_arg);
+	DBT *dbt = this;
+	memset(dbt, 0, sizeof(DBT));
+	set_data(data_arg);
+	set_size(size_arg);
 }
 
 Dbt::~Dbt()
@@ -40,17 +40,17 @@ Dbt::~Dbt()
 
 Dbt::Dbt(const Dbt &that)
 {
-    const DBT *from = &that;
-    DBT *to = this;
-    memcpy(to, from, sizeof(DBT));
+	const DBT *from = &that;
+	DBT *to = this;
+	memcpy(to, from, sizeof(DBT));
 }
 
 Dbt &Dbt::operator = (const Dbt &that)
 {
-    if (this != &that) {
-        const DBT *from = &that;
-        DBT *to = this;
-        memcpy(to, from, sizeof(DBT));
-    }
-    return (*this);
+	if (this != &that) {
+		const DBT *from = &that;
+		DBT *to = this;
+		memcpy(to, from, sizeof(DBT));
+	}
+	return (*this);
 }

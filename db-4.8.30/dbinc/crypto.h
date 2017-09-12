@@ -6,8 +6,8 @@
  * $Id$
  */
 
-#ifndef _DB_CRYPTO_H_
-#define _DB_CRYPTO_H_
+#ifndef	_DB_CRYPTO_H_
+#define	_DB_CRYPTO_H_
 
 #if defined(__cplusplus)
 extern "C" {
@@ -36,21 +36,21 @@ extern "C" {
  * This structure is per-process, not in shared memory.
  */
 struct __db_cipher {
-    u_int   (*adj_size) __P((size_t));
-    int (*close) __P((ENV *, void *));
-    int (*decrypt) __P((ENV *, void *, void *, u_int8_t *, size_t));
-    int (*encrypt) __P((ENV *, void *, void *, u_int8_t *, size_t));
-    int (*init) __P((ENV *, DB_CIPHER *));
+	u_int	(*adj_size) __P((size_t));
+	int	(*close) __P((ENV *, void *));
+	int	(*decrypt) __P((ENV *, void *, void *, u_int8_t *, size_t));
+	int	(*encrypt) __P((ENV *, void *, void *, u_int8_t *, size_t));
+	int	(*init) __P((ENV *, DB_CIPHER *));
 
-    u_int8_t mac_key[DB_MAC_KEY];   /* MAC key. */
-    void    *data;          /* Algorithm-specific information */
+	u_int8_t mac_key[DB_MAC_KEY];	/* MAC key. */
+	void	*data;			/* Algorithm-specific information */
 
-#define CIPHER_AES  1       /* AES algorithm */
-    u_int8_t    alg;        /* Algorithm used - See above */
-    u_int8_t    spare[3];   /* Spares */
+#define	CIPHER_AES	1		/* AES algorithm */
+	u_int8_t	alg;		/* Algorithm used - See above */
+	u_int8_t	spare[3];	/* Spares */
 
-#define CIPHER_ANY  0x00000001  /* Only for DB_CIPHER */
-    u_int32_t   flags;      /* Other flags */
+#define	CIPHER_ANY	0x00000001	/* Only for DB_CIPHER */
+	u_int32_t	flags;		/* Other flags */
 };
 
 #ifdef HAVE_CRYPTO
@@ -62,18 +62,18 @@ struct __db_cipher {
  * No mutex needed because all information is read-only after creation.
  */
 typedef struct __cipher {
-    roff_t      passwd;     /* Offset to shared passwd */
-    size_t      passwd_len; /* Length of passwd */
-    u_int32_t   flags;      /* Algorithm used - see above */
+	roff_t		passwd;		/* Offset to shared passwd */
+	size_t		passwd_len;	/* Length of passwd */
+	u_int32_t	flags;		/* Algorithm used - see above */
 } CIPHER;
 
-#define DB_AES_KEYLEN   128 /* AES key length */
-#define DB_AES_CHUNK    16  /* AES byte unit size */
+#define	DB_AES_KEYLEN	128	/* AES key length */
+#define	DB_AES_CHUNK	16	/* AES byte unit size */
 
 typedef struct __aes_cipher {
-    keyInstance decrypt_ki; /* Decryption key instance */
-    keyInstance encrypt_ki; /* Encryption key instance */
-    u_int32_t   flags;      /* AES-specific flags */
+	keyInstance	decrypt_ki;	/* Decryption key instance */
+	keyInstance	encrypt_ki;	/* Encryption key instance */
+	u_int32_t	flags;		/* AES-specific flags */
 } AES_CIPHER;
 
 #include "dbinc_auto/crypto_ext.h"

@@ -705,8 +705,8 @@ boost::filesystem::path static GetAutostartDir()
 
 boost::filesystem::path static GetAutostartFilePath()
 {
-    std::string chain = ChainNameFromCommandLine();
-    if (chain == CBaseChainParams::MAIN)
+    NetworkType chain = ChainNameFromCommandLine();
+    if (chain == NETWORK_MAIN)
         return GetAutostartDir() / "sigecoin.desktop";
     return GetAutostartDir() / strprintf("sigecoin-%s.lnk", chain);
 }
@@ -746,11 +746,12 @@ bool SetStartOnSystemStartup(bool fAutoStart)
         boost::filesystem::ofstream optionFile(GetAutostartFilePath(), std::ios_base::out|std::ios_base::trunc);
         if (!optionFile.good())
             return false;
-        std::string chain = ChainNameFromCommandLine();
+
+        NetworkType chain = ChainNameFromCommandLine();
         // Write a sigecoin.desktop file to the autostart directory:
         optionFile << "[Desktop Entry]\n";
         optionFile << "Type=Application\n";
-        if (chain == CBaseChainParams::MAIN)
+        if (chain == NETWORK_MAIN)
             optionFile << "Name=Sigecoin\n";
         else
             optionFile << strprintf("Name=Sigecoin (%s)\n", chain);

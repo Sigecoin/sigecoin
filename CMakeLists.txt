@@ -44,19 +44,25 @@ endmacro()
 
 project (sige)
 
-if (SIGE_GUI)
-    set(CMAKE_AUTOMOC OFF)
-    set(CMAKE_AUTOUIC OFF)
-    set(CMAKE_AUTORCC OFF)
-endif()
 
 set (CPACK_PACKAGE_VERSION_MAJOR "1")
 set (CPACK_PACKAGE_VERSION_MINOR "0")
 set (CPACK_PACKAGE_VERSION_PATCH "0")
 
-set (SIGE_GUI  ON CACHE BOOL "")
+if (WIN32)
+    set (SIGE_GUI  ON CACHE BOOL "")
+    set (MSVC_RUNTIME "static")
+else (WIN32)
+    set (SIGE_GUI  OFF CACHE BOOL "")
+endif (WIN32)
+
 set (SIGE_TEST ON CACHE BOOL "")
-set (MSVC_RUNTIME "static")
+
+if (SIGE_GUI)
+    set(CMAKE_AUTOMOC OFF)
+    set(CMAKE_AUTOUIC OFF)
+    set(CMAKE_AUTORCC OFF)
+endif()
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE "Release" CACHE STRING
@@ -71,16 +77,7 @@ if (WIN32)
         configure_msvc_runtime()
 	set (PLATFORM_COMPILE_FLAGS "-DBOOST_SPIRIT_THREADSAFE -D_CRT_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -DWIN32_LEAN_AND_MEAN /wd4244")
 else (WIN32)
-	set (PLATFORM_COMPILE_FLAGS "-DBOOST_SPIRIT_THREADSAFE -Werror=switch -fPIC")
-	IF (CMAKE_SYSTEM_PROCESSOR MATCHES "^(i.86|x86(_64)?)$")
-		set (PLATFORM_COMPILE_FLAGS "${PLATFORM_COMPILE_FLAGS} -msse4")
-	endif()
-endif (WIN32)
-
-if (WIN32)
-	set (PLATFORM_C_FLAGS "/std=c11")
-else (WIN32)
-	set (PLATFORM_C_FLAGS "-std=c11")
+	set (PLATFORM_COMPILE_FLAGS "-DBOOST_SPIRIT_THREADSAFE -Werror=switch -Wno-deprecated -fPIC -pthread")
 endif (WIN32)
 
 if (WIN32)
@@ -99,9 +96,13 @@ if (WIN32)
     set (PLATFORM_LINK_FLAGS "")
     set (PLATFORM_SPECIFIC_LIBS WS2_32.lib)
     set (PLATFORM_SPECIFIC_GUI_LIBS WS2_32.lib opengl32.lib Shlwapi.lib Imm32.lib Winmm.lib)
+
     include_directories (${CMAKE_SOURCE_DIR} ${libdb_SOURCE_DIR} ${libdb_SOURCE_DIR}/build_windows)
+
 else (WIN32)
     set (PLATFORM_LINK_FLAGS "-static-libgcc -static-libstdc++")
+    set (PLATFORM_SPECIFIC_LIBS -lrt -lpthread)
+    set (EVENT_LIBS event event_pthreads)
     include_directories (${CMAKE_SOURCE_DIR} ${libdb_SOURCE_DIR} ${libdb_SOURCE_DIR}/build_unix)
 endif (WIN32)
 
@@ -109,20 +110,67 @@ endif (WIN32)
 
 find_package(OpenSSL)
 if (OPENSSL_FOUND)
-	include_directories(${OPENSSL_INCLUDE_DIR})
-	set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
+    include_directories(${OPENSSL_INCLUDE_DIR})
+    set(CMAKE_REQUIRED_INCLUDES ${OPENSSL_INCLUDE_DIR})
 
-	find_library(SSL_CRYPT_RELEASE
-		NAMES crypt32
-		NAMES_PER_DIR
-		${_OPENSSL_ROOT_HINTS_AND_PATHS}
-		PATH_SUFFIXES
-		${_OPENSSL_PATH_SUFFIXES}
-	)
-	set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES} ${SSL_CRYPT_RELEASE})
+    if (WIN32)
+        find_library(SSL_CRYPT_RELEASE
+            NAMES crypt32
+            NAMES_PER_DIR
+            ${_OPENSSL_ROOT_HINTS_AND_PATHS}
+            PATH_SUFFIXES
+            ${_OPENSSL_PATH_SUFFIXES}
+        )
+     set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES} ${SSL_CRYPT_RELEASE})
+    else (WIN32)
+        set(OPENSSL_LIBRARIES ${OPENSSL_LIBRARIES})
+    endif (WIN32)
 endif (OPENSSL_FOUND)
 
-add_subdirectory (libevent)
+if (WIN32)
+    add_subdirectory (libevent)
+    set (LIBEVENT_LIBS event_core_static event_extra_static event_openssl_static)
+else (WIN32)
+    # find LibEvent
+    # an event notification library (http://libevent.org/)
+    #
+    # Usage: 
+    # LIBEVENT_INCLUDE_DIRS, where to find LibEvent headers
+    # LIBEVENT_LIBS, LibEvent libraries
+    # Libevent_FOUND, If false, do not try to use libevent
+    set(LIBEVENT_ROOT CACHE PATH "Root directory of libevent installation")
+    set(LibEvent_EXTRA_PREFIXES /usr/local /opt/local "$ENV{HOME}" ${LIBEVENT_ROOT})
+    foreach(prefix ${LibEvent_EXTRA_PREFIXES})
+        list(APPEND LibEvent_INCLUDE_PATHS "${prefix}/include")
+        list(APPEND LibEvent_LIBS_PATHS "${prefix}/lib")
+    endforeach()
+
+    find_path(LIBEVENT_INCLUDE_DIRS event.h PATHS ${LibEvent_INCLUDE_PATHS})
+    find_library(LIBEVENT_LIB NAMES event PATHS ${LibEvent_LIBS_PATHS})
+    find_library(LIBEVENT_PTHREADS_LIB NAMES event_pthreads PATHS ${LibEvent_LIBS_PATHS})
+    if (LIBEVENT_LIB AND LIBEVENT_PTHREADS_LIB AND LIBEVENT_INCLUDE_DIRS)
+        set(Libevent_FOUND TRUE)
+        set(LIBEVENT_LIBS ${LIBEVENT_LIB} ${LIBEVENT_PTHREADS_LIB})
+    else ()
+        set(Libevent_FOUND FALSE)
+    endif ()
+
+    if (Libevent_FOUND)
+        if (NOT Libevent_FIND_QUIETLY)
+            message(STATUS "Found libevent libraries: ${LIBEVENT_LIBS}")
+        endif ()
+    else ()
+        if (LibEvent_FIND_REQUIRED)
+            message(FATAL_ERROR "Could NOT find libevent libraries.")
+        endif ()
+        message(STATUS "libevent or libevent-pthreads NOT found.")
+    endif ()
+
+    mark_as_advanced(
+        LIBEVENT_LIBS
+        LIBEVENT_INCLUDE_DIRS
+    )
+endif (WIN32)
 
 if (SIGE_GUI)
 	if (WIN32)
@@ -171,7 +219,7 @@ add_library (univalue
 
 set (WINSOCK2_LIBRARY Ws2_32 CACHE STRING "")
 
-add_library (crypto
+add_library (wallet
         sige/crypto/aes.cpp
         sige/crypto/aes.h
         sige/crypto/common.h
@@ -187,11 +235,8 @@ add_library (crypto
         sige/crypto/sha256.h
         sige/crypto/sha512.cpp
         sige/crypto/sha512.h
-        )
-set_target_properties(crypto PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS}")
-target_include_directories(crypto PRIVATE ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/sige/crypto)
-
-add_library (wallet
+        sige/src/policy/rbf.cpp
+        sige/src/policy/rbf.h 
         sige/wallet/accounting_entry.cpp
         sige/wallet/accounting_entry.h
         sige/wallet/coincontrol.h
@@ -373,7 +418,7 @@ set (SRC_CORE
         sige/src/versionbits.h
         sige/src/warnings.cpp
         sige/src/warnings.h
-        sige/src/wintype.h 
+        sige/src/wintype.h
         )
 
 set (SRC_CONSENSUS
@@ -389,8 +434,6 @@ set (SRC_POLICY
         sige/src/policy/fees.h
         sige/src/policy/policy.cpp
         sige/src/policy/policy.h
-        sige/src/policy/rbf.cpp
-        sige/src/policy/rbf.h 
         )
 
 set (SRC_PRIMITIVES
@@ -468,7 +511,7 @@ if (ENABLE_ZMQ)
                 sige/src/zmq/zmqpublishnotifier.cpp
                 sige/src/zmq/zmqpublishnotifier.h
         )
-        source_group("zmq"        FILES ${SRC_ZMQ})
+        source_group("zmq" FILES ${SRC_ZMQ})
 endif (ENABLE_ZMQ)
 
 add_library (sigecoin 
@@ -482,9 +525,8 @@ add_library (sigecoin
         ${SRC_ZMQ}
         )
 
-set_target_properties (sigecoin PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS}")
+set_target_properties (sigecoin PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -pthread")
 target_include_directories(sigecoin PUBLIC ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/univalue ${libdb_INCLUDES} ${secp256k1_SOURCE_DIR} ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${libevent_SOURCE_DIR}/include ${libevent_BINARY_DIR}/include)
-add_dependencies(sigecoin crypto wallet univalue secp256k1 leveldb event_core_static event_extra_static event_openssl_static)
 
 add_executable (bench
         sige/bench/base58.cpp
@@ -520,13 +562,19 @@ add_executable (sigenode-tx
 
 set_target_properties (bench PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
 set_target_properties (bench PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
-set_target_properties (sigenode sigenode-cli sigenode-tx PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
-set_target_properties (sigenode sigenode-cli sigenode-tx PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
+target_link_libraries (bench sigecoin wallet univalue secp256k1 libdb leveldb ${LIBEVENT_LIBS} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} sigecoin ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 
-target_link_libraries (sigenode sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
-target_link_libraries (sigenode-cli sigecoin crypto wallet univalue secp256k1 event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
-target_link_libraries (sigenode-tx sigecoin crypto wallet univalue secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
-target_link_libraries (bench sigecoin crypto wallet univalue secp256k1 libdb leveldb event_core_static event_extra_static event_openssl_static ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+set_target_properties (sigenode PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
+set_target_properties (sigenode PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
+target_link_libraries (sigenode sigecoin wallet univalue libdb secp256k1 leveldb ${LIBEVENT_LIBS} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} sigecoin ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+
+set_target_properties (sigenode-cli PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
+set_target_properties (sigenode-cli PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
+target_link_libraries (sigenode-cli sigecoin wallet univalue secp256k1 ${LIBEVENT_LIBS} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+
+set_target_properties (sigenode-tx PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
+set_target_properties (sigenode-tx PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
+target_link_libraries (sigenode-tx sigecoin wallet univalue secp256k1 leveldb ${LIBEVENT_LIBS} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 
 if (SIGE_TEST)
         add_executable (tests
@@ -592,16 +640,31 @@ if (SIGE_TEST)
 
 	set_target_properties (tests PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
 	set_target_properties (tests PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
-	target_link_libraries (tests sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+	target_link_libraries (tests sigecoin wallet univalue libdb secp256k1 leveldb ${LIBEVENT_LIBS} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 
         add_executable (tests_crypto
-                sige/crypto/ctaes/ctaes.c
-                sige/crypto/ctaes/ctaes.h
                 sige/crypto/ctaes/test.c
+                sige/crypto/aes.cpp
+                sige/crypto/aes.h
+                sige/crypto/common.h
+                sige/crypto/hmac_sha256.cpp
+                sige/crypto/hmac_sha256.h
+                sige/crypto/hmac_sha512.cpp
+                sige/crypto/hmac_sha512.h
+                sige/crypto/ripemd160.cpp
+                sige/crypto/ripemd160.h
+                sige/crypto/sha1.cpp
+                sige/crypto/sha1.h
+                sige/crypto/sha256.cpp
+                sige/crypto/sha256.h
+                sige/crypto/sha512.cpp
+                sige/crypto/sha512.h
                 )
+
 	set_target_properties (tests_crypto PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
 	set_target_properties (tests_crypto PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
-	target_link_libraries (tests_crypto crypto ${PLATFORM_LIBS})
+	target_include_directories(tests_crypto PRIVATE ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src)
+	target_link_libraries (tests_crypto ${PLATFORM_LIBS})
 
         add_executable (tests_wallet
                 sige/wallet/test/accounting_tests.cpp
@@ -618,7 +681,7 @@ if (SIGE_TEST)
 	set_target_properties (tests_wallet PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
 	set_target_properties (tests_wallet PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS}")
         target_include_directories(tests_wallet PRIVATE ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/sige/wallet ${libdb_INCLUDES} ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${sige_SOURCE_DIR}/univalue)
-	target_link_libraries (tests_wallet sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
+	target_link_libraries (tests_wallet sigecoin wallet univalue libdb secp256k1 leveldb ${LIBEVENT_LIBS} ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} sigecoin ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_LIBS})
 endif (SIGE_TEST)
 
 
@@ -805,6 +868,7 @@ if (SIGE_GUI)
 	# Setup additional QT libraries for static QT linkage
         set(QT_LIB_PATH $ENV{QTDIR}/lib)
 
+if (WIN32)
 	add_library(QT5_Qtharbuzzng UNKNOWN IMPORTED)
 	set_property(TARGET QT5_Qtharbuzzng APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 	set_target_properties(QT5_Qtharbuzzng PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/qtharfbuzzng.lib")
@@ -817,29 +881,42 @@ if (SIGE_GUI)
 	set_property(TARGET QT5_Pcre APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
 	set_target_properties(QT5_Pcre PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/qtpcred.lib")
 
-	add_library(QT5_FreeType UNKNOWN IMPORTED)
-	set_property(TARGET QT5_FreeType APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
-	set_target_properties(QT5_FreeType PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/qtfreetype.lib")
-	set_property(TARGET QT5_FreeType APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
-	set_target_properties(QT5_FreeType PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/qtfreetyped.lib ")
-
-	add_library(Qt5_PlatformSupport UNKNOWN IMPORTED)
-	set_property(TARGET Qt5_PlatformSupport APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
-	set_target_properties(Qt5_PlatformSupport PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/Qt5PlatformSupport.lib")
-	set_property(TARGET Qt5_PlatformSupport APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
-	set_target_properties(Qt5_PlatformSupport PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/Qt5PlatformSupportd.lib")
-
 	add_library(Qt5_WindowsStaticPlugin UNKNOWN IMPORTED)
 	set_property(TARGET Qt5_WindowsStaticPlugin APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
 	set_target_properties(Qt5_WindowsStaticPlugin PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/../plugins/platforms/qwindows.lib")
 	set_property(TARGET Qt5_WindowsStaticPlugin APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
 	set_target_properties(Qt5_WindowsStaticPlugin PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/../plugins/platforms/qwindowsd.lib")
+endif (WIN32)
 
+
+	add_library(QT5_FreeType UNKNOWN IMPORTED)
+	set_property(TARGET QT5_FreeType APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+	set_property(TARGET QT5_FreeType APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
+
+	add_library(Qt5_PlatformSupport UNKNOWN IMPORTED)
+	set_property(TARGET Qt5_PlatformSupport APPEND PROPERTY IMPORTED_CONFIGURATIONS RELEASE)
+	set_property(TARGET Qt5_PlatformSupport APPEND PROPERTY IMPORTED_CONFIGURATIONS DEBUG)
 
 	# Setup QT wallet properties
+	set_target_properties (sigecoin_qt PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_STATICPLUGIN -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH} -lrt -lm")
+	target_include_directories(sigecoin_qt PRIVATE ${sige_SOURCE_DIR}/sige ${sige_SOURCE_DIR}/sige/qt ${sige_SOURCE_DIR}/sige/src ${sige_SOURCE_DIR}/sige/wallet ${libdb_INCLUDES} ${leveldb_SOURCE_DIR} ${leveldb_SOURCE_DIR}/include ${sige_SOURCE_DIR}/univalue)
+
+if (WIN32)
+	set_target_properties(QT5_FreeType PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/qtfreetype.lib")
+	set_target_properties(QT5_FreeType PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/qtfreetyped.lib ")
+	set_target_properties(Qt5_PlatformSupport PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/Qt5PlatformSupport.lib")
+	set_target_properties(Qt5_PlatformSupport PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/Qt5PlatformSupportd.lib")
 	set_target_properties (sigecoin_qt PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS} /LIBPATH:${QT_LIB_PATH}")
-	set_target_properties (sigecoin_qt PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_STATICPLUGIN -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
-	target_link_libraries (sigecoin_qt sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${PROTOBUF_LIBRARIES} ${OPENSSL_LIBRARIES} ${Boost_ATOMIC_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_LOG_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_LOG_SETUP_LIBRARY} ${Boost_THREAD_LIBRARY} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS} Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType)
+	target_link_libraries (sigecoin_qt sigecoin wallet univalue libdb secp256k1 leveldb ${LIBEVENT_LIBS} ${PROTOBUF_LIBRARIES} ${OPENSSL_LIBRARIES} ${Boost_ATOMIC_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_LOG_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_LOG_SETUP_LIBRARY} ${Boost_THREAD_LIBRARY} Qt5::Core Qt5::Gui Qt5::Network Qt5::Widgets Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType sigecoin ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS})
+else (WIN32)
+	set_target_properties(QT5_FreeType PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/libqtfreetype.a")
+	set_target_properties(QT5_FreeType PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/libqtfreetyped.a ")
+	set_target_properties(Qt5_PlatformSupport PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_RELEASE "C" IMPORTED_LOCATION_RELEASE "${QT_LIB_PATH}/libQt5PlatformSupport.a")
+	set_target_properties(Qt5_PlatformSupport PROPERTIES IMPORTED_LINK_INTERFACE_LANGUAGES_DEBUG "C" IMPORTED_LOCATION_DEBUG "${QT_LIB_PATH}/libQt5PlatformSupportd.a")
+	set_target_properties (sigecoin_qt PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS} -L${QT_LIB_PATH}")
+	target_link_libraries (sigecoin_qt sigecoin wallet univalue libdb secp256k1 leveldb Qt5::Network ${PROTOBUF_PROTOC_LIBRARY} ${LIBEVENT_LIBS} ${OPENSSL_LIBRARIES} ${Boost_ATOMIC_LIBRARY} ${Boost_CHRONO_LIBRARY} ${Boost_REGEX_LIBRARY} ${Boost_DATE_TIME_LIBRARY} ${Boost_FILESYSTEM_LIBRARY} ${Boost_SYSTEM_LIBRARY} ${Boost_LOG_LIBRARY} ${Boost_PROGRAM_OPTIONS_LIBRARY} ${Boost_LOG_SETUP_LIBRARY} ${Boost_THREAD_LIBRARY} Qt5::Core Qt5::Gui Qt5::Widgets Qt5_PlatformSupport sigecoin ${PROTOBUF_LIBRARIES} Qt5::Network ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS})
+endif (WIN32)
+
 
         set (QT_TESTS
 		sige/qt/bantablemodel.cpp
@@ -894,11 +971,16 @@ if (SIGE_GUI)
 		${QT_TESTS}
 	)
 
+if (WIN32)
+	set_target_properties (sigecoin_qt_test PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS} /LIBPATH:${QT_LIB_PATH}")
+else (WIN32)
+	set_target_properties (sigecoin_qt_test PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS} -L${QT_LIB_PATH}/")
+endif (WIN32)
+
 	# Setup QT tests properties
         add_dependencies(sigecoin_qt_test sigecoin_qt)
-	set_target_properties (sigecoin_qt_test PROPERTIES LINK_FLAGS "${PLATFORM_LINK_FLAGS} /LIBPATH:${QT_LIB_PATH}")
 	set_target_properties (sigecoin_qt_test PROPERTIES COMPILE_FLAGS "${PLATFORM_CXX_FLAGS} ${PLATFORM_COMPILE_FLAGS} -DQT_STATICPLUGIN -DQT_NO_KEYWORDS -DSIGE_VERSION_MAJOR=${CPACK_PACKAGE_VERSION_MAJOR} -DSIGE_VERSION_MINOR=${CPACK_PACKAGE_VERSION_MINOR} -DBOOST_ASIO_HAS_STD_ARRAY=1 -DSIGE_VERSION_PATCH=${CPACK_PACKAGE_VERSION_PATCH}")
-	target_link_libraries (sigecoin_qt_test sigecoin crypto wallet univalue libdb secp256k1 leveldb event_core_static event_extra_static event_openssl_static ${PROTOBUF_LIBRARIES} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS} Qt5::Core Qt5::Network Qt5::Widgets Qt5::Test Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType)
+	target_link_libraries (sigecoin_qt_test sigecoin wallet univalue libdb secp256k1 leveldb ${LIBEVENT_LIBS} ${OPENSSL_LIBRARIES} ${Boost_LIBRARIES} Qt5::Core Qt5::Network Qt5::Widgets Qt5::Test Qt5_PlatformSupport Qt5_WindowsStaticPlugin QT5_Qtharbuzzng QT5_Pcre QT5_FreeType sigecoin ${PROTOBUF_LIBRARIES} ${PLATFORM_LIBS} ${PLATFORM_SPECIFIC_GUI_LIBS})
 
 endif (SIGE_GUI)
 
@@ -928,7 +1010,7 @@ if (SIGE_GUI)
 		install (FILES ${Qt5_bin_DIR}/Qt5Widgets.dll DESTINATION .)
 		install (FILES ${Qt5_bin_DIR}/Qt5WinExtras.dll DESTINATION .)
 		install (FILES ${Qt5WindowsPlugin} DESTINATION platforms)
-	else ()
-		install (TARGETS qt_wallet DESTINATION .)
+	#else ()
+		# install (TARGETS qt_wallet DESTINATION .)
 	endif ()
 endif (SIGE_GUI)

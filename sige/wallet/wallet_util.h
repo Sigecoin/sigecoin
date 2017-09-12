@@ -10,6 +10,7 @@
 
 #include "amount.h"
 #include "utilstrencodings.h"
+#include "streams.h"
 
 typedef std::map<std::string, std::string> mapValue_t;
 

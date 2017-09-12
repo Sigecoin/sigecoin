@@ -266,7 +266,7 @@ replication state will still be set.&nbsp; The prevention will be
 implemented as:<br>
 <pre>#define REP_F_START_CALLED &lt;some bit value&gt;<br></pre>
 In __rep_start, at the end:<br>
-<pre>if (ret == 0 ) {<br>   REP_SYSTEM_LOCK<br> F_SET(rep, REP_F_START_CALLED)<br>  REP_SYSTEM_UNLOCK<br>}</pre>
+<pre>if (ret == 0 ) {<br>	REP_SYSTEM_LOCK<br>	F_SET(rep, REP_F_START_CALLED)<br>	REP_SYSTEM_UNLOCK<br>}</pre>
 In <i>__rep_env_refresh</i>, if we
 are the last reference closing the env (we already check for that):<br>
 <pre>F_CLR(rep, REP_F_START_CALLED);</pre>
@@ -329,7 +329,7 @@ adhere to leases are:<br>
 The code that will check leases for a client reading would look
 something
 like this, if we decide to become heavy-handed:<br>
-<pre>if (IS_REP_CLIENT(dbenv)) {<br>    [get to rep structure]<br>  if (FLD_ISSET(rep-&gt;config, REP_C_LEASE) &amp;&amp; !LF_ISSET(DB_IGNORE_LEASE)) {<br>     db_err("Read operations must ignore leases or go to master");<br>       ret = EINVAL;<br>       goto err;<br>   }<br>}<br></pre>
+<pre>if (IS_REP_CLIENT(dbenv)) {<br>	[get to rep structure]<br>	if (FLD_ISSET(rep-&gt;config, REP_C_LEASE) &amp;&amp; !LF_ISSET(DB_IGNORE_LEASE)) {<br>		db_err("Read operations must ignore leases or go to master");<br>		ret = EINVAL;<br>		goto err;<br>	}<br>}<br></pre>
 On the master, the new code to abide by leases is more complex.&nbsp;
 After the call to perform the operation we will check the lease.&nbsp;
 In that checking code, the master will see if it has a valid
@@ -340,7 +340,7 @@ master cannot respond to the read as an authority and we return an
 error.&nbsp; The new error is called <b>DB_REP_LEASE_EXPIRED</b>.&nbsp;
 The location of the master lease check is down after the internal call
 to read the data is successful:<br>
-<pre>if (IS_REP_MASTER(dbenv) &amp;&amp; !LF_ISSET(DB_IGNORE_LEASE)) {<br>  [get to rep structure]<br>  if (FLD_ISSET(rep-&gt;config, REP_C_LEASE) &amp;&amp;<br>       (ret = __rep_lease_check(dbenv)) != 0) {<br>        /*<br>       * We don't hold the lease.<br>      */<br>     goto err;<br>   }<br>}<br></pre>
+<pre>if (IS_REP_MASTER(dbenv) &amp;&amp; !LF_ISSET(DB_IGNORE_LEASE)) {<br>	[get to rep structure]<br>	if (FLD_ISSET(rep-&gt;config, REP_C_LEASE) &amp;&amp;<br>	    (ret = __rep_lease_check(dbenv)) != 0) {<br>		/*<br>		 * We don't hold the lease.<br>		 */<br>		goto err;<br>	}<br>}<br></pre>
 See below for the details of <i>__rep_lease_check</i>.<br>
 <br>
 Also note that if leases (or replication) are not configured, then <span
@@ -387,7 +387,7 @@ record and therefore we
 do not need any additional message in order for a master to request a
 lease grant.&nbsp; The <b>REP_LEASE_GRANT</b>
 message will pass a structure as its message DBT:<br>
-<pre>struct __rep_lease_grant {<br> db_timespec msg_time;<br>#ifdef DIAGNOSTIC<br>  db_timespec expire_time;<br>#endif<br>} REP_GRANT_INFO;<br></pre>
+<pre>struct __rep_lease_grant {<br>	db_timespec msg_time;<br>#ifdef DIAGNOSTIC<br>	db_timespec expire_time;<br>#endif<br>} REP_GRANT_INFO;<br></pre>
 In the <b>REP_LEASE_GRANT</b>
 message, the client is actually giving the master several pieces of
 information.&nbsp; We only need the echoed <i>msg_time</i> in this
@@ -414,7 +414,7 @@ new fields must be initialized when the region is created. Whenever we
 grant our master lease and want to send the <b>REP_LEASE_GRANT</b>
 message, this value
 will be updated.&nbsp; It will be used in the following way:
-<pre>db_timespec mytime;<br>DB_LSN perm_lsn;<br>DBT lease_dbt;<br>REP_GRANT_INFO gi;<br><br><br>timespecclear(&amp;mytime);<br>timespecclear(&amp;newgrant);<br>memset(&amp;lease_dbt, 0, sizeof(lease_dbt));<br>memset(&amp;gi, 0, sizeof(gi));<br>__os_gettime(dbenv, &amp;mytime);<br>timespecadd(&amp;mytime, &amp;rep-&gt;lease_duration);<br>MUTEX_LOCK(rep-&gt;clientdb_mutex);<br>perm_lsn = lp-&gt;max_perm_lsn;<br>MUTEX_UNLOCK(rep-&gt;clientdb_mutex);<br>REP_SYSTEM_LOCK(dbenv);<br>if (timespeccmp(mytime, rep-&gt;grant_expire, &gt;))<br>   rep-&gt;grant_expire = mytime;<br>gi.msg_time = msg-&gt;msg_time;<br>#ifdef DIAGNOSTIC<br>gi.expire_time = rep-&gt;grant_expire;<br>#endif<br>lease_dbt.data = &amp;gi;<br>lease_dbt.size = sizeof(gi);<br>REP_SYSTEM_UNLOCK(dbenv);<br>__rep_send_message(dbenv, eid, REP_LEASE_GRANT, &amp;perm_lsn, &amp;lease_dbt, 0, 0);<br></pre>
+<pre>db_timespec mytime;<br>DB_LSN perm_lsn;<br>DBT lease_dbt;<br>REP_GRANT_INFO gi;<br><br><br>timespecclear(&amp;mytime);<br>timespecclear(&amp;newgrant);<br>memset(&amp;lease_dbt, 0, sizeof(lease_dbt));<br>memset(&amp;gi, 0, sizeof(gi));<br>__os_gettime(dbenv, &amp;mytime);<br>timespecadd(&amp;mytime, &amp;rep-&gt;lease_duration);<br>MUTEX_LOCK(rep-&gt;clientdb_mutex);<br>perm_lsn = lp-&gt;max_perm_lsn;<br>MUTEX_UNLOCK(rep-&gt;clientdb_mutex);<br>REP_SYSTEM_LOCK(dbenv);<br>if (timespeccmp(mytime, rep-&gt;grant_expire, &gt;))<br>	rep-&gt;grant_expire = mytime;<br>gi.msg_time = msg-&gt;msg_time;<br>#ifdef DIAGNOSTIC<br>gi.expire_time = rep-&gt;grant_expire;<br>#endif<br>lease_dbt.data = &amp;gi;<br>lease_dbt.size = sizeof(gi);<br>REP_SYSTEM_UNLOCK(dbenv);<br>__rep_send_message(dbenv, eid, REP_LEASE_GRANT, &amp;perm_lsn, &amp;lease_dbt, 0, 0);<br></pre>
 This updating of the lease grant will occur in the <b>PERM</b> code
 path when we have
 successfully applied the permanent record.<br>
@@ -442,7 +442,7 @@ Second, once we are proceeding with becoming a master, the site must
 allocate the table it will use to maintain lease information.&nbsp;
 This table will be sized based on <i>nsites</i>
 and it will be an array of the following structure:<br>
-<pre>struct  {<br>  int eid;            /* EID of client site. */<br>   db_timespec start_time; /* Unique time ID client echoes back on grants. */<br>  db_timespec end_time;   /* Master's lease expiration time. */<br>   DB_LSN lease_lsn;   /* Durable LSN this lease applies to. */<br>    u_int32_t flags;    /* Unused for now?? */<br>} REP_LEASE_ENTRY;<br></pre>
+<pre>struct  {<br>	int eid;			/* EID of client site. */<br>	db_timespec start_time;	/* Unique time ID client echoes back on grants. */<br>	db_timespec end_time;	/* Master's lease expiration time. */<br>	DB_LSN lease_lsn;	/* Durable LSN this lease applies to. */<br>	u_int32_t flags;	/* Unused for now?? */<br>} REP_LEASE_ENTRY;<br></pre>
 <h3>Granting Leases</h3>
 It is the burden of the application to make sure that all sites in the
 group
@@ -523,7 +523,7 @@ will have a new public DB error return called <b>DB_REP_LEASE_EXPIRED</b>
 that will be
 returned back to the caller if the master cannot assert its
 authority.&nbsp; The code will look something like this:<br>
-<pre>/*<br> * Use lp-&gt;max_perm_lsn on the master (currently not used on the master)<br> * to keep track of the last PERM record written through the logging system.<br> * need to initialize lp-&gt;max_perm_lsn in rep_start on role_chg.<br> */<br>call __rep_send_message on the last PERM record the master wrote, with DB_REP_PERMANENT<br>if failure<br>   expire leases<br>   return lease expired error to caller<br>else /* success */<br>  recheck lease table<br> /*<br>   * We need to recheck the lease table because the client<br>     * lease grant messages may not be processed yet, or got<br>     * lost, or racing with the application's ACK messages or<br>    * whatever. <br>    */<br> if we have a majority of valid leases<br>       return success<br>  else<br>        return lease expired error to caller <br></pre>
+<pre>/*<br> * Use lp-&gt;max_perm_lsn on the master (currently not used on the master)<br> * to keep track of the last PERM record written through the logging system.<br> * need to initialize lp-&gt;max_perm_lsn in rep_start on role_chg.<br> */<br>call __rep_send_message on the last PERM record the master wrote, with DB_REP_PERMANENT<br>if failure<br>	expire leases<br>	return lease expired error to caller<br>else /* success */<br>	recheck lease table<br>	/*<br>	 * We need to recheck the lease table because the client<br>	 * lease grant messages may not be processed yet, or got<br>	 * lost, or racing with the application's ACK messages or<br>	 * whatever. <br>	 */<br>	if we have a majority of valid leases<br>		return success<br>	else<br>		return lease expired error to caller <br></pre>
 <h4>Ongoing Update Refreshment<br>
 </h4>
 Second is having the master indicate to
@@ -671,7 +671,7 @@ The third piece of lease management is handling the incoming <b>REP_LEASE_GRANT<
 message on the
 master.&nbsp; When this message is received, the master must do the
 following:<br>
-<pre>REP_SYSTEM_LOCK<br>msg_timestamp = cntrl-&gt;timestamp;<br>client_lease = __rep_lease_entry(dbenv, client eid)<br>if (client_lease == NULL)<br>    initial lease for this site, DB_ASSERT there is space in the table<br>  add this to the table if there is space<br>} else <br>  compare msg_timestamp with client_lease-&gt;start_time<br>  if (msg_timestamp is more recent &amp;&amp; msg_lsn &gt;= lease LSN)<br>        update entry in table<br>REP_SYSTEM_UNLOCK<br></pre>
+<pre>REP_SYSTEM_LOCK<br>msg_timestamp = cntrl-&gt;timestamp;<br>client_lease = __rep_lease_entry(dbenv, client eid)<br>if (client_lease == NULL)<br>	initial lease for this site, DB_ASSERT there is space in the table<br>	add this to the table if there is space<br>} else <br>	compare msg_timestamp with client_lease-&gt;start_time<br>	if (msg_timestamp is more recent &amp;&amp; msg_lsn &gt;= lease LSN)<br>		update entry in table<br>REP_SYSTEM_UNLOCK<br></pre>
 <h3>Expiring Leases</h3>
 Leases can expire in two ways.&nbsp; First they can expire naturally
 due to the passage of time.&nbsp; When checking leases, if the current
@@ -683,7 +683,7 @@ second case we need to manipulate the <i>end_time</i>
 so that all future lease checks fail.&nbsp; Since the lease <i>start_time</i>
 is guaranteed to not be in the future we will have a function <i>__rep_lease_expire</i>
 that will:<br>
-<pre>REP_SYSTEM_LOCK<br>for each entry in the lease table<br>   entry-&gt;end_time = entry-&gt;start_time;<br>REP_SYSTEM_UNLOCK<br></pre>
+<pre>REP_SYSTEM_LOCK<br>for each entry in the lease table<br>	entry-&gt;end_time = entry-&gt;start_time;<br>REP_SYSTEM_UNLOCK<br></pre>
 Is there a potential race or problem with prematurely expiring
 leases?&nbsp; Consider an application that enforces an ALL
 acknowledgement policy for PERM records in its transport
@@ -715,7 +715,7 @@ for a lease to be valid.&nbsp; It must be within the timeframe of the
 lease grant and the lease must be valid for the last PERM record
 LSN.&nbsp; Here is the logic
 for checking the validity of leases in <i>__rep_lease_check</i>:<br>
-<pre>#define MAX_REFRESH_TRIES  3<br>DB_LSN lease_lsn;<br>REP_LEASE_ENTRY *entry;<br>u_int32_t min_leases, valid_leases;<br>db_timespec cur_time;<br>int ret, tries;<br><br>    tries = 0;<br>retry:<br>    ret = 0;<br>    LOG_SYSTEM_LOCK<br> lease_lsn = lp-&gt;lsn<br>  LOG_SYSTEM_UNLOCK<br>   REP_SYSTEM_LOCK<br> min_leases = rep-&gt;nsites / 2;<br>    __os_gettime(dbenv, &amp;cur_time);<br> for (entry = head of table, valid_leases = 0; entry != NULL &amp;&amp; valid_leases &lt; min_leases; entry++)<br>       if (timespec_cmp(&amp;entry-&gt;end_time, &amp;cur_time) &gt;= 0 &amp;&amp; log_compare(&amp;entry-&gt;lsn, lease_lsn) == 0)<br>            valid_leases++;<br> REP_SYSTEM_UNLOCK<br>   if (valid_leases &lt; min_leases) {<br>     ret =__rep_lease_refresh(dbenv, ...);<br>       /*<br>       * If we are successful, we need to recheck the leases because <br>      * the lease grant messages may have raced with the PERM<br>         * acknowledgement.  Give those messages a chance to arrive.<br>         */<br>     if (ret == 0) {<br>         if (tries &lt;= MAX_REFRESH_TRIES) {<br>                /*<br>               * If we were successful sending, but not successful in racing the<br>               * message thread, yield the processor so that message<br>               * threads may have a chance to run.<br>                 */<br>             if (tries &gt; 0)<br>                   /* __os_sleep instead?? */<br>                  __os_yield()<br>                tries++;<br>                goto retry;<br>         } else<br>              ret = DB_RET_LEASE_EXPIRED;<br>     }<br>   }<br>   return (ret);</pre>
+<pre>#define MAX_REFRESH_TRIES	3<br>DB_LSN lease_lsn;<br>REP_LEASE_ENTRY *entry;<br>u_int32_t min_leases, valid_leases;<br>db_timespec cur_time;<br>int ret, tries;<br><br>	tries = 0;<br>retry:<br>	ret = 0;<br>	LOG_SYSTEM_LOCK<br>	lease_lsn = lp-&gt;lsn<br>	LOG_SYSTEM_UNLOCK<br>	REP_SYSTEM_LOCK<br>	min_leases = rep-&gt;nsites / 2;<br>	__os_gettime(dbenv, &amp;cur_time);<br>	for (entry = head of table, valid_leases = 0; entry != NULL &amp;&amp; valid_leases &lt; min_leases; entry++)<br>		if (timespec_cmp(&amp;entry-&gt;end_time, &amp;cur_time) &gt;= 0 &amp;&amp; log_compare(&amp;entry-&gt;lsn, lease_lsn) == 0)<br>			valid_leases++;<br>	REP_SYSTEM_UNLOCK<br>	if (valid_leases &lt; min_leases) {<br>		ret =__rep_lease_refresh(dbenv, ...);<br>		/*<br>		 * If we are successful, we need to recheck the leases because <br>		 * the lease grant messages may have raced with the PERM<br>		 * acknowledgement.  Give those messages a chance to arrive.<br>		 */<br>		if (ret == 0) {<br>			if (tries &lt;= MAX_REFRESH_TRIES) {<br>				/*<br>				 * If we were successful sending, but not successful in racing the<br>				 * message thread, yield the processor so that message<br>				 * threads may have a chance to run.<br>				 */<br>				if (tries &gt; 0)<br>					/* __os_sleep instead?? */<br>					__os_yield()<br>				tries++;<br>				goto retry;<br>			} else<br>				ret = DB_RET_LEASE_EXPIRED;<br>		}<br>	}<br>	return (ret);</pre>
 If the master has enough valid leases it returns success.&nbsp; If it
 does not have enough, it attempts to refresh them.&nbsp; This attempt
 may fail if sending the PERM record does not receive sufficient
@@ -794,10 +794,10 @@ it needs to deal with leases and both send the <b>REP_NEWMASTER</b>
 message and refresh
 the lease.<br>
 The code will work as follows:<br>
-<pre>if (leases_configured &amp;&amp; (my_grant_still_valid || lease_never_granted) {<br>   if (lease_never_granted)<br>        wait_time = lease_timeout<br>   else<br>        wait_time = grant_expiration - current_time<br> F_SET(REP_F_EPHASE0);<br>   __rep_send_message(..., REP_MASTER_REQ, ... REPCTL_LEASE);<br>  ret = __rep_wait(..., REP_F_EPHASE0);<br>   if (we found a master)<br>      return<br>} /* if we don't return, fall out and proceed with election */<br></pre>
+<pre>if (leases_configured &amp;&amp; (my_grant_still_valid || lease_never_granted) {<br>	if (lease_never_granted)<br>		wait_time = lease_timeout<br>	else<br>		wait_time = grant_expiration - current_time<br>	F_SET(REP_F_EPHASE0);<br>	__rep_send_message(..., REP_MASTER_REQ, ... REPCTL_LEASE);<br>	ret = __rep_wait(..., REP_F_EPHASE0);<br>	if (we found a master)<br>		return<br>} /* if we don't return, fall out and proceed with election */<br></pre>
 On the master side, the code handling the <b>REP_MASTER_REQ</b> will
 do:<br>
-<pre>if (I am master) {<br> ...<br> __rep_send_message(REP_NEWMASTER...)<br>    if (F_ISSET(rp, REPCTL_LEASE))<br>      __rep_lease_refresh(...)<br>}<br></pre>
+<pre>if (I am master) {<br>	...<br>	__rep_send_message(REP_NEWMASTER...)<br>	if (F_ISSET(rp, REPCTL_LEASE))<br>		__rep_lease_refresh(...)<br>}<br></pre>
 Other minor implementation details are that<i> __rep_elect_done</i>
 must also clear
 the <b>REP_F_EPHASE0</b> flag.&nbsp;

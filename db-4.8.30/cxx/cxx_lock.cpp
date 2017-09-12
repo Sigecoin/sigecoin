@@ -20,22 +20,22 @@
 ////////////////////////////////////////////////////////////////////////
 
 DbLock::DbLock(DB_LOCK value)
-:   lock_(value)
+:	lock_(value)
 {
 }
 
 DbLock::DbLock()
 {
-    memset(&lock_, 0, sizeof(DB_LOCK));
+	memset(&lock_, 0, sizeof(DB_LOCK));
 }
 
 DbLock::DbLock(const DbLock &that)
-:   lock_(that.lock_)
+:	lock_(that.lock_)
 {
 }
 
 DbLock &DbLock::operator = (const DbLock &that)
 {
-    lock_ = that.lock_;
-    return (*this);
+	lock_ = that.lock_;
+	return (*this);
 }

@@ -6,7 +6,7 @@
 
 #include "base58.h"
 #include "key.h"
-#include "ExtKey.h"
+#include "extkey.h"
 #include "uint256.h"
 #include "util.h"
 #include "utilstrencodings.h"

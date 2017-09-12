@@ -7,7 +7,7 @@
  */
 
 #ifndef _DB_CXX_INT_H_
-#define _DB_CXX_INT_H_
+#define	_DB_CXX_INT_H_
 
 // private data structures known to the implementation only
 
@@ -25,20 +25,20 @@
 // WRAPPED_CLASS implements the appropriate wrap() and unwrap() methods
 // for a wrapper class that has an underlying pointer representation.
 //
-#define WRAPPED_CLASS(_WRAPPER_CLASS, _IMP_CLASS, _WRAPPED_TYPE)           \
-    class _IMP_CLASS {};                                               \
-                                       \
-    inline _WRAPPED_TYPE *unwrap(_WRAPPER_CLASS *val)                  \
-    {                                                                  \
-        if (!val) return (0);                                      \
-        return (val->get_##_WRAPPED_TYPE());                       \
-    }                                                                  \
-                                       \
-    inline const _WRAPPED_TYPE *unwrapConst(const _WRAPPER_CLASS *val) \
-    {                                                                  \
-        if (!val) return (0);                                      \
-        return (val->get_const_##_WRAPPED_TYPE());                 \
-    }
+#define	WRAPPED_CLASS(_WRAPPER_CLASS, _IMP_CLASS, _WRAPPED_TYPE)           \
+	class _IMP_CLASS {};                                               \
+									   \
+	inline _WRAPPED_TYPE *unwrap(_WRAPPER_CLASS *val)                  \
+	{                                                                  \
+		if (!val) return (0);                                      \
+		return (val->get_##_WRAPPED_TYPE());                       \
+	}                                                                  \
+									   \
+	inline const _WRAPPED_TYPE *unwrapConst(const _WRAPPER_CLASS *val) \
+	{                                                                  \
+		if (!val) return (0);                                      \
+		return (val->get_const_##_WRAPPED_TYPE());                 \
+	}
 
 WRAPPED_CLASS(Db, DbImp, DB)
 WRAPPED_CLASS(DbEnv, DbEnvImp, DB_ENV)
@@ -51,25 +51,25 @@ WRAPPED_CLASS(DbTxn, DbTxnImp, DB_TXN)
 // be kept private, even though methods that return the
 // tristate int can be declared in db_cxx.h .
 //
-#define ON_ERROR_THROW     1
-#define ON_ERROR_RETURN    0
-#define ON_ERROR_UNKNOWN   (-1)
+#define	ON_ERROR_THROW     1
+#define	ON_ERROR_RETURN    0
+#define	ON_ERROR_UNKNOWN   (-1)
 
 // Macros that handle detected errors, in case we want to
 // change the default behavior.  The 'policy' is one of
 // the tristate values given above.  If UNKNOWN is specified,
 // the behavior is taken from the last initialized DbEnv.
 //
-#define DB_ERROR(dbenv, caller, ecode, policy) \
+#define	DB_ERROR(dbenv, caller, ecode, policy) \
     DbEnv::runtime_error(dbenv, caller, ecode, policy)
 
-#define DB_ERROR_DBT(dbenv, caller, dbt, policy) \
+#define	DB_ERROR_DBT(dbenv, caller, dbt, policy) \
     DbEnv::runtime_error_dbt(dbenv, caller, dbt, policy)
 
-#define DB_OVERFLOWED_DBT(dbt) \
-    (F_ISSET(dbt, DB_DBT_USERMEM) && dbt->size > dbt->ulen)
+#define	DB_OVERFLOWED_DBT(dbt) \
+	(F_ISSET(dbt, DB_DBT_USERMEM) && dbt->size > dbt->ulen)
 
 /* values for Db::flags_ */
-#define DB_CXX_PRIVATE_ENV      0x00000001
+#define	DB_CXX_PRIVATE_ENV      0x00000001
 
 #endif /* !_DB_CXX_INT_H_ */

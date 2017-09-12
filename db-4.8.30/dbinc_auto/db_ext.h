@@ -1,6 +1,6 @@
 /* DO NOT EDIT: automatically built by dist/s_include. */
-#ifndef _db_ext_h_
-#define _db_ext_h_
+#ifndef	_db_ext_h_
+#define	_db_ext_h_
 
 #if defined(__cplusplus)
 extern "C" {
@@ -227,7 +227,7 @@ const FN * __db_get_flags_fn __P((void));
 int __db_dump_pp __P((DB *, const char *, int (*)(void *, const void *), void *, int, int));
 int __db_dump __P((DB *, const char *, int (*)(void *, const void *), void *, int, int));
 int __db_prdbt __P((DBT *, int, const char *, void *, int (*)(void *, const void *), int));
-int __db_prheader __P((DB *, const char *, int, int, void *, int (*)(void *, const void *), VRFY_DBINFO *, db_pgno_t));
+int	__db_prheader __P((DB *, const char *, int, int, void *, int (*)(void *, const void *), VRFY_DBINFO *, db_pgno_t));
 int __db_prfooter __P((void *, int (*)(void *, const void *)));
 int  __db_pr_callback __P((void *, const void *));
 const char * __db_dbtype_to_string __P((DBTYPE));

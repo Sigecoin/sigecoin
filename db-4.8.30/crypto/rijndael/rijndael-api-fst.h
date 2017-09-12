@@ -49,9 +49,9 @@
 #define     MODE_ECB              1 /*  Are we ciphering in ECB mode?   */
 #define     MODE_CBC              2 /*  Are we ciphering in CBC mode?   */
 #define     MODE_CFB1             3 /*  Are we ciphering in 1-bit CFB mode? */
-#undef      TRUE
+#undef	    TRUE
 #define     TRUE                  1
-#undef      FALSE
+#undef	    FALSE
 #define     FALSE                 0
 #define     BITSPERBLOCK        128 /* Default number of bits in a cipher block */
 
@@ -77,9 +77,9 @@ typedef struct {
     u_int8_t  direction;            /* Key used for encrypting or decrypting? */
     int   keyLen;                   /* Length of the key  */
     char  keyMaterial[MAX_KEY_SIZE+1];  /* Raw key data in ASCII, e.g., user input or KAT values */
-    int   Nr;                       /* key-length-dependent number of rounds */
-    u32   rk[4*(MAXNR + 1)];        /* key schedule */
-    u32   ek[4*(MAXNR + 1)];        /* CFB1 key schedule (encryption only) */
+	int   Nr;                       /* key-length-dependent number of rounds */
+	u32   rk[4*(MAXNR + 1)];        /* key schedule */
+	u32   ek[4*(MAXNR + 1)];        /* CFB1 key schedule (encryption only) */
 } keyInstance;
 
 /*  The structure for cipher information */

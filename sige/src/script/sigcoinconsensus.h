@@ -21,10 +21,6 @@
     #define EXPORT_SYMBOL __attribute__ ((visibility ("default")))
 #endif
 
-#if !defined(STATIC_LIBSIGCOINCONSENSUS)
-  #define EXPORT_SYMBOL __declspec(dllimport)
-#endif
-
 #ifndef EXPORT_SYMBOL
   #define EXPORT_SYMBOL
 #endif

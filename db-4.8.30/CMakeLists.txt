@@ -50,9 +50,7 @@ if (WIN32)
     configure_msvc_runtime()
     set (PLATFORM_COMPILE_FLAGS "-D_CRT_SECURE_NO_DEPRECATE -D_SCL_SECURE_NO_DEPRECATE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_DEPRECATE -D_LIB /wd4244")
 else (WIN32)
-    set (PLATFORM_C_FLAGS "-std=c11")
-    set (PLATFORM_CXX_FLAGS "-std=c++11")
-    set (PLATFORM_COMPILE_FLAGS "-Werror=switch -fPIC")
+    set (PLATFORM_COMPILE_FLAGS "-Werror=switch -fPIC -D_REENTRANT -D_GNU_SOURCE")
 endif (WIN32)
 
 
@@ -76,14 +74,13 @@ set (SRC_BTREE
     btree/bt_stat.c
     btree/bt_upgrade.c
     btree/bt_verify.c
-    btree/btree.src
     btree/btree_auto.c
     btree/btree_autop.c 
     )
 
-set (SRC_CLIB
-    clib/strsep.c
-    )
+if (WIN32)
+    set (SRC_CLIB clib/strsep.c)
+endif (WIN32)
 
 set (SRC_COMMON
     common/db_byteorder.c

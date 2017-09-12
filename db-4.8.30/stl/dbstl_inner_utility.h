@@ -23,8 +23,8 @@ START_NS(dbstl)
 class _exported DbstlGlobalInnerObject
 {
 public:
-    DbstlGlobalInnerObject(){}
-    virtual ~DbstlGlobalInnerObject(){}
+	DbstlGlobalInnerObject(){}
+	virtual ~DbstlGlobalInnerObject(){}
 
 }; // DbstlGlobalInnerObject
 
@@ -44,14 +44,14 @@ template<typename T>
 class _exported DbstlHeapObject : public DbstlGlobalInnerObject
 {
 private:
-    typedef DbstlHeapObject<T> self;
-    T *obj;
+	typedef DbstlHeapObject<T> self;
+	T *obj;
 
-    // Only allow creating to heap.
-    DbstlHeapObject(T *obj1) { obj = obj1; }
+	// Only allow creating to heap.
+	DbstlHeapObject(T *obj1) { obj = obj1; }
 public:
-    static self *instance(T *obj1) { return new self(obj1); }
-    virtual ~DbstlHeapObject() { delete obj; }
+	static self *instance(T *obj1) { return new self(obj1); }
+	virtual ~DbstlHeapObject() { delete obj; }
 }; // DbstlHeapObject
 
 END_NS

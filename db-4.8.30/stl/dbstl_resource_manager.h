@@ -101,21 +101,21 @@ template <Typename T>
 class TlsWrapper
 {
 public:
-    static T *get_tls_obj()
-    {
-        return tinst_;
-    }
+	static T *get_tls_obj()
+	{
+		return tinst_;
+	}
 
-    static void set_tls_obj(T *objp)
-    {
-        tinst_ = objp;
-    }
+	static void set_tls_obj(T *objp)
+	{
+		tinst_ = objp;
+	}
 
 private:
-    TlsWrapper(){}
+	TlsWrapper(){}
 
-    // Thread local pointer to the instance of type T.
-    static TLS_DECL_MODIFIER T *tinst_;
+	// Thread local pointer to the instance of type T.
+	static TLS_DECL_MODIFIER T *tinst_;
 }; // TlsWrapper<>
 
 #elif defined(HAVE_PTHREAD_TLS)
@@ -123,21 +123,21 @@ template <Typename T>
 class TlsWrapper
 {
 public:
-    static T *get_tls_obj()
-    {
-        return static_cast<T*>(pthread_getspecific(tls_key_));
-    }
+	static T *get_tls_obj()
+	{
+		return static_cast<T*>(pthread_getspecific(tls_key_));
+	}
 
-    static void set_tls_obj(T *objp)
-    {
-        pthread_setspecific(tls_key_, objp);
-    }
+	static void set_tls_obj(T *objp)
+	{
+		pthread_setspecific(tls_key_, objp);
+	}
 
-    // Friend declarations don't work portably, so we have to declare 
-    // tls_key_ public.
-    static pthread_key_t tls_key_;
+	// Friend declarations don't work portably, so we have to declare 
+	// tls_key_ public.
+	static pthread_key_t tls_key_;
 private:
-    TlsWrapper();
+	TlsWrapper();
 
 }; // TlsWrapper<>
 
@@ -149,202 +149,202 @@ class _exported ResourceManager : public DbstlGlobalInnerObject
 {
 private:
 
-    ResourceManager(void);
-    // open_dbs_ & open_envs_ are shared among threads, protected by
-    // ghdl_mtx;
-    static map<Db *, size_t> open_dbs_;
-    static map<DbEnv *, size_t>open_envs_;
+	ResourceManager(void);
+	// open_dbs_ & open_envs_ are shared among threads, protected by
+	// ghdl_mtx;
+	static map<Db *, size_t> open_dbs_;
+	static map<DbEnv *, size_t>open_envs_;
 
-    // Transaction stack of all environments. Use a stack to allow nested
-    // transactions. The transaction at the top of the stack is the
-    // current active transaction.
-    //
-    env_txns_t env_txns_;
+	// Transaction stack of all environments. Use a stack to allow nested
+	// transactions. The transaction at the top of the stack is the
+	// current active transaction.
+	//
+	env_txns_t env_txns_;
 
-    // Cursors opened in a corresponding transaction context. When
-    // committing or aborting a transaction, first close all open cursors.
-    //
-    txncsr_t txn_csrs_;
+	// Cursors opened in a corresponding transaction context. When
+	// committing or aborting a transaction, first close all open cursors.
+	//
+	txncsr_t txn_csrs_;
 
-    // If in container X, its methods X::A and X::B both call begin and
-    // commit transaction. X::A calls X::B after it's begin transaction
-    // call, then X::B will commit the transaction prematurally. To avoid
-    // will commit the only transaction prematurally, to avoid this, we use
-    // this, we use this map to record each transaction's reference count.
-    // Each begin/commit_txn() will increment/decrement the reference
-    // count, when reference count goes to 0, the transaction is committed.
-    // Abort_txn will unconditionally abort the transaction.
-    //
-    map<DbTxn *, size_t> txn_count_;
+	// If in container X, its methods X::A and X::B both call begin and
+	// commit transaction. X::A calls X::B after it's begin transaction
+	// call, then X::B will commit the transaction prematurally. To avoid
+	// will commit the only transaction prematurally, to avoid this, we use
+	// this, we use this map to record each transaction's reference count.
+	// Each begin/commit_txn() will increment/decrement the reference
+	// count, when reference count goes to 0, the transaction is committed.
+	// Abort_txn will unconditionally abort the transaction.
+	//
+	map<DbTxn *, size_t> txn_count_;
 
-    // Contains the cursors opened in the current thread for each database,
-    // So that we can close them in the right way, freeing any Berkeley DB
-    // handles before exiting.
-    //
-    db_csr_map_t all_csrs_;
+	// Contains the cursors opened in the current thread for each database,
+	// So that we can close them in the right way, freeing any Berkeley DB
+	// handles before exiting.
+	//
+	db_csr_map_t all_csrs_;
 
-    // Remove cursors opened in the transaction txn's context, should be
-    // called before commiting or aborting a transaction.
-    //
-    void remove_txn_cursor(DbTxn *txn);
+	// Remove cursors opened in the transaction txn's context, should be
+	// called before commiting or aborting a transaction.
+	//
+	void remove_txn_cursor(DbTxn *txn);
 
-    // Add a cursor to the current transaction's set of open cursors.
-    void add_txn_cursor(DbCursorBase *dcbcsr, DbEnv *env);
+	// Add a cursor to the current transaction's set of open cursors.
+	void add_txn_cursor(DbCursorBase *dcbcsr, DbEnv *env);
 
-    // The environment mtx_env_ and mtx_handle_ are used for synchronizing
-    // multiple threads' access to open_dbs_ and open_envs_ and glob_objs_.
-    // They are discarded when program exits, no deallocation/release
-    // is done.
-    static DbEnv *mtx_env_;
-    static db_mutex_t mtx_handle_;
-    static db_mutex_t mtx_globj_;
-    static set<DbstlGlobalInnerObject *> glob_objs_;
+	// The environment mtx_env_ and mtx_handle_ are used for synchronizing
+	// multiple threads' access to open_dbs_ and open_envs_ and glob_objs_.
+	// They are discarded when program exits, no deallocation/release
+	// is done.
+	static DbEnv *mtx_env_;
+	static db_mutex_t mtx_handle_;
+	static db_mutex_t mtx_globj_;
+	static set<DbstlGlobalInnerObject *> glob_objs_;
 
-    // This set stores db handles that are new'ed by open_db, and thus 
-    // should be deleted after this db is closed automatically by dbstl.
-    // If a db is new'ed and created by user without using open_db, users
-    // should delete it.
-    static set<Db *> deldbs; 
-    static set<DbEnv *> delenvs; // Similar to deldbs, works with open_envs.
-    static void set_global_callbacks();
+	// This set stores db handles that are new'ed by open_db, and thus 
+	// should be deleted after this db is closed automatically by dbstl.
+	// If a db is new'ed and created by user without using open_db, users
+	// should delete it.
+	static set<Db *> deldbs; 
+	static set<DbEnv *> delenvs; // Similar to deldbs, works with open_envs.
+	static void set_global_callbacks();
 public:
-    
-    // This function should be called in a single thread inside a process, 
-    // before any use of dbstl.
-    static void global_startup();
-    // Delete registered DbstlGlobalInnerObject objects.
-    static void global_exit();
-    static void register_global_object(DbstlGlobalInnerObject *gio);
-    static DbEnv *get_mutex_env() { return mtx_env_; }
-    // Lock mtx_handle_, if it is 0, allocate it first.
-    static int global_lock(db_mutex_t dbcontainer_mtx);
-    static int global_unlock(db_mutex_t dbcontainer_mtx);
-    // Close pdb regardless of its reference count, users must make sure
-    // pdb is not used by others before calling this method. We can't
-    // close by reference count in this method, otherwise when the thread
-    // exits pdb's reference count is decremented twice.
-    void close_db(Db *pdb);
+	
+	// This function should be called in a single thread inside a process, 
+	// before any use of dbstl.
+	static void global_startup();
+	// Delete registered DbstlGlobalInnerObject objects.
+	static void global_exit();
+	static void register_global_object(DbstlGlobalInnerObject *gio);
+	static DbEnv *get_mutex_env() { return mtx_env_; }
+	// Lock mtx_handle_, if it is 0, allocate it first.
+	static int global_lock(db_mutex_t dbcontainer_mtx);
+	static int global_unlock(db_mutex_t dbcontainer_mtx);
+	// Close pdb regardless of its reference count, users must make sure
+	// pdb is not used by others before calling this method. We can't
+	// close by reference count in this method, otherwise when the thread
+	// exits pdb's reference count is decremented twice.
+	void close_db(Db *pdb);
 
-    // Close all db handles regardless of reference count, used to clean up
-    // the calling thread's ResourceManager singleton.
-    void close_all_dbs();
+	// Close all db handles regardless of reference count, used to clean up
+	// the calling thread's ResourceManager singleton.
+	void close_all_dbs();
 
-    // Close specified db env handle and remove it from resource manager.
-    void close_db_env(DbEnv *penv);
+	// Close specified db env handle and remove it from resource manager.
+	void close_db_env(DbEnv *penv);
 
-    // Close and remove all db env registered in the resource manager.
-    // Used to clean up the calling thread's ResourceManager singleton.
-    void close_all_db_envs();
+	// Close and remove all db env registered in the resource manager.
+	// Used to clean up the calling thread's ResourceManager singleton.
+	void close_all_db_envs();
 
-    // Begin a new transaction in the specified environment. When outtxn
-    // is non-zero support nested transactions - the new transaction will
-    // be started as a child of the current transaction. If outtxn is 0
-    // we are starting an internal transaction for autocommit, no new
-    // transaction will be started, but the current transaction's
-    // reference count will be incremented if it already has a reference
-    // count; otherwise, it was created by user, and we simply use this
-    // transaction, set its reference count to 2.
-    //
-    // This function is called by both containers to begin an internal
-    // transaction for autocommit, and by db stl users to begin an
-    // external transaction.
-    //
-    DbTxn *begin_txn(u_int32_t flags/* flags for DbEnv::txn_begin */,
-        DbEnv *env, int outtxn);
+	// Begin a new transaction in the specified environment. When outtxn
+	// is non-zero support nested transactions - the new transaction will
+	// be started as a child of the current transaction. If outtxn is 0
+	// we are starting an internal transaction for autocommit, no new
+	// transaction will be started, but the current transaction's
+	// reference count will be incremented if it already has a reference
+	// count; otherwise, it was created by user, and we simply use this
+	// transaction, set its reference count to 2.
+	//
+	// This function is called by both containers to begin an internal
+	// transaction for autocommit, and by db stl users to begin an
+	// external transaction.
+	//
+	DbTxn *begin_txn(u_int32_t flags/* flags for DbEnv::txn_begin */,
+	    DbEnv *env, int outtxn);
 
-    // Decrement reference count if it exists and if it goes to 0, commit
-    // current transaction T opened in env;
-    // If T has no reference count(outside transaction), simply find
-    // it by popping the stack and commit it.
-    //
-    // This function is called by db_container to commit a transaction
-    // for auto commit, also can be called by db stl user to commit
-    // an external explicit transaction.
-    //
-    void commit_txn(DbEnv *env, u_int32_t flags = 0);
+	// Decrement reference count if it exists and if it goes to 0, commit
+	// current transaction T opened in env;
+	// If T has no reference count(outside transaction), simply find
+	// it by popping the stack and commit it.
+	//
+	// This function is called by db_container to commit a transaction
+	// for auto commit, also can be called by db stl user to commit
+	// an external explicit transaction.
+	//
+	void commit_txn(DbEnv *env, u_int32_t flags = 0);
 
-    // Commit specified transaction txn: find it by popping the stack,
-    // discard all its child transactions and commit it.
-    //
-    // This function is called by dbstl user to commit an external
-    // explicit transaction.
-    //
-    void commit_txn(DbEnv *env, DbTxn *txn, u_int32_t flags = 0);
+	// Commit specified transaction txn: find it by popping the stack,
+	// discard all its child transactions and commit it.
+	//
+	// This function is called by dbstl user to commit an external
+	// explicit transaction.
+	//
+	void commit_txn(DbEnv *env, DbTxn *txn, u_int32_t flags = 0);
 
-    // Abort current transaction of the environment.
-    //
-    void abort_txn(DbEnv *env);
+	// Abort current transaction of the environment.
+	//
+	void abort_txn(DbEnv *env);
 
-    // Abort specified transaction: find it by popping the stack, discard
-    // all its child transactions and abort it.
-    //
-    // This function is called by dbstl user to abort an external
-    // explicit transaction.
-    //
-    void abort_txn(DbEnv *env, DbTxn *txn);
+	// Abort specified transaction: find it by popping the stack, discard
+	// all its child transactions and abort it.
+	//
+	// This function is called by dbstl user to abort an external
+	// explicit transaction.
+	//
+	void abort_txn(DbEnv *env, DbTxn *txn);
 
-    // Set env's current transaction handle. The original transaction
-    // handle is returned without aborting or commiting. This API can be
-    // used to share a transaction handle among multiple threads.
-    DbTxn* set_current_txn_handle(DbEnv *env, DbTxn *newtxn);
+	// Set env's current transaction handle. The original transaction
+	// handle is returned without aborting or commiting. This API can be
+	// used to share a transaction handle among multiple threads.
+	DbTxn* set_current_txn_handle(DbEnv *env, DbTxn *newtxn);
 
-    // Register a Db handle. This handle and handles opened in it
-    // will be closed by ResourceManager, so application code must not
-    // try to close or delete it. Users can configure the handle before
-    // opening the Db and then register it via this function.
-    //
-    void register_db(Db *pdb1);
+	// Register a Db handle. This handle and handles opened in it
+	// will be closed by ResourceManager, so application code must not
+	// try to close or delete it. Users can configure the handle before
+	// opening the Db and then register it via this function.
+	//
+	void register_db(Db *pdb1);
 
-    // Register a DbEnv handle. This handle and handles opened in it
-    // will be closed by ResourceManager, so application code must not try
-    // to close or delete it. Users can configure the handle before
-    // opening the Environment and then register it via this function.
-    //
-    void register_db_env(DbEnv *env1);
+	// Register a DbEnv handle. This handle and handles opened in it
+	// will be closed by ResourceManager, so application code must not try
+	// to close or delete it. Users can configure the handle before
+	// opening the Environment and then register it via this function.
+	//
+	void register_db_env(DbEnv *env1);
 
-    // Helper function to open a database and register it into
-    // ResourceManager.
-    // Users can set the create flags, open flags, db type, and flags
-    // needing to be set before open.
-    //
-    Db* open_db (DbEnv *penv, const char *filename, DBTYPE dbtype,
-        u_int32_t oflags, u_int32_t set_flags, int mode = 0644,
-        DbTxn* txn = NULL, u_int32_t cflags = 0,
-        const char *dbname = NULL);
+	// Helper function to open a database and register it into
+	// ResourceManager.
+	// Users can set the create flags, open flags, db type, and flags
+	// needing to be set before open.
+	//
+	Db* open_db (DbEnv *penv, const char *filename, DBTYPE dbtype,
+	    u_int32_t oflags, u_int32_t set_flags, int mode = 0644,
+	    DbTxn* txn = NULL, u_int32_t cflags = 0,
+	    const char *dbname = NULL);
 
-    // Helper function to open a dbenv and register it into
-    // ResourceManager.
-    // Users can set the create flags, open flags, db type, and flags
-    // needing to be set before open.
-    //
-    DbEnv *open_env(const char *env_home, u_int32_t set_flags,
-        u_int32_t oflags = DB_CREATE | DB_INIT_MPOOL,
-        u_int32_t cachesize = 4 * 1024 * 1024, int mode = 0644,
-        u_int32_t cflags = 0/* Flags for DbEnv constructor. */);
+	// Helper function to open a dbenv and register it into
+	// ResourceManager.
+	// Users can set the create flags, open flags, db type, and flags
+	// needing to be set before open.
+	//
+	DbEnv *open_env(const char *env_home, u_int32_t set_flags,
+	    u_int32_t oflags = DB_CREATE | DB_INIT_MPOOL,
+	    u_int32_t cachesize = 4 * 1024 * 1024, int mode = 0644,
+	    u_int32_t cflags = 0/* Flags for DbEnv constructor. */);
 
-    static ResourceManager *instance();
+	static ResourceManager *instance();
 
-    // Release all registered resource in the right order.
-    virtual ~ResourceManager(void);
+	// Release all registered resource in the right order.
+	virtual ~ResourceManager(void);
 
-    // Return current transaction of environment env, that is, the one on
-    // the transaction stack top, the active one.
-    //
-    DbTxn *current_txn(DbEnv *env);
+	// Return current transaction of environment env, that is, the one on
+	// the transaction stack top, the active one.
+	//
+	DbTxn *current_txn(DbEnv *env);
 
-    // Open a Berkeley DB cursor.
-    //
-    int open_cursor(DbCursorBase *dcbcsr, Db *pdb, int flags = 0);
+	// Open a Berkeley DB cursor.
+	//
+	int open_cursor(DbCursorBase *dcbcsr, Db *pdb, int flags = 0);
 
-    // Add a db-cursor mapping.
-    void add_cursor(Db *dbp, DbCursorBase *csr);
+	// Add a db-cursor mapping.
+	void add_cursor(Db *dbp, DbCursorBase *csr);
 
-    // Close all cursors opened in the database.
-    size_t close_db_cursors(Db *dbp1);
+	// Close all cursors opened in the database.
+	size_t close_db_cursors(Db *dbp1);
 
-    // Close and remove a cursor from ResourceManager.
-    //
-    int remove_cursor(DbCursorBase *csr, bool remove_from_txncsrs = true);
+	// Close and remove a cursor from ResourceManager.
+	//
+	int remove_cursor(DbCursorBase *csr, bool remove_from_txncsrs = true);
 
 }; // ResourceManager
 

@@ -7,21 +7,21 @@
  */
 
 #ifndef _DB_REGION_H_
-#define _DB_REGION_H_
+#define	_DB_REGION_H_
 
 /*
  * The DB environment consists of some number of "regions", which are described
  * by the following four structures:
  *
- *  REGENV     -- shared information about the environment
- *  REGENV_REF -- file describing system memory version of REGENV
- *  REGION     -- shared information about a single region
- *  REGINFO    -- per-process information about a REGION
+ *	REGENV	   -- shared information about the environment
+ *	REGENV_REF -- file describing system memory version of REGENV
+ *	REGION	   -- shared information about a single region
+ *	REGINFO	   -- per-process information about a REGION
  *
  * There are three types of memory that hold regions:
- *  per-process heap (malloc)
- *  file mapped into memory (mmap, MapViewOfFile)
- *  system memory (shmget, CreateFileMapping)
+ *	per-process heap (malloc)
+ *	file mapped into memory (mmap, MapViewOfFile)
+ *	system memory (shmget, CreateFileMapping)
  *
  * By default, regions are created in filesystem-backed shared memory.  They
  * can also be created in system shared memory (DB_SYSTEM_MEM), or, if private
@@ -36,19 +36,19 @@
  * structures.  Each REGION structures describes an underlying chunk of
  * shared memory.
  *
- *  __db.001
- *  +---------+
- *  |REGENV  |
- *  +---------+   +----------+
- *  |REGION   |-> | __db.002 |
- *  |     |   +----------+
- *  +---------+   +----------+
- *  |REGION   |-> | __db.003 |
- *  |     |   +----------+
- *  +---------+   +----------+
- *  |REGION   |-> | __db.004 |
- *  |     |   +----------+
- *  +---------+
+ *	__db.001
+ *	+---------+
+ *	|REGENV  |
+ *	+---------+   +----------+
+ *	|REGION   |-> | __db.002 |
+ *	|	  |   +----------+
+ *	+---------+   +----------+
+ *	|REGION   |-> | __db.003 |
+ *	|	  |   +----------+
+ *	+---------+   +----------+
+ *	|REGION   |-> | __db.004 |
+ *	|	  |   +----------+
+ *	+---------+
  *
  * The tricky part about manipulating the regions is creating or joining the
  * database environment.  We have to be sure only a single thread of control
@@ -100,9 +100,9 @@
  * threads could lose track of it.  Also, some systems didn't support mutex
  * copying, e.g., from OSF1 V4.0:
  *
- *  The address of an msemaphore structure may be significant.  If the
- *  msemaphore structure contains any value copied from an msemaphore
- *  structure at a different address, the result is undefined.
+ *	The address of an msemaphore structure may be significant.  If the
+ *	msemaphore structure contains any value copied from an msemaphore
+ *	structure at a different address, the result is undefined.
  *
  * All mutexes are now maintained in a separate region which is never unmapped,
  * so growing regions should be possible.
@@ -112,172 +112,172 @@
 extern "C" {
 #endif
 
-#define DB_REGION_PREFIX    "__db"      /* DB file name prefix. */
-#define DB_REGION_FMT       "__db.%03d" /* Region file name format. */
-#define DB_REGION_ENV       "__db.001"  /* Primary environment name. */
+#define	DB_REGION_PREFIX	"__db"		/* DB file name prefix. */
+#define	DB_REGION_FMT		"__db.%03d"	/* Region file name format. */
+#define	DB_REGION_ENV		"__db.001"	/* Primary environment name. */
 
-#define INVALID_REGION_ID   0   /* Out-of-band region ID. */
-#define REGION_ID_ENV       1   /* Primary environment ID. */
+#define	INVALID_REGION_ID	0	/* Out-of-band region ID. */
+#define	REGION_ID_ENV		1	/* Primary environment ID. */
 
 typedef enum {
-    INVALID_REGION_TYPE=0,      /* Region type. */
-    REGION_TYPE_ENV,
-    REGION_TYPE_LOCK,
-    REGION_TYPE_LOG,
-    REGION_TYPE_MPOOL,
-    REGION_TYPE_MUTEX,
-    REGION_TYPE_TXN } reg_type_t;
+	INVALID_REGION_TYPE=0,		/* Region type. */
+	REGION_TYPE_ENV,
+	REGION_TYPE_LOCK,
+	REGION_TYPE_LOG,
+	REGION_TYPE_MPOOL,
+	REGION_TYPE_MUTEX,
+	REGION_TYPE_TXN } reg_type_t;
 
-#define INVALID_REGION_SEGID    -1  /* Segment IDs are either shmget(2) or
-                     * Win16 segment identifiers.  They are
-                     * both stored in a "long", and we need
-                     * an out-of-band value.
-                     */
+#define	INVALID_REGION_SEGID	-1	/* Segment IDs are either shmget(2) or
+					 * Win16 segment identifiers.  They are
+					 * both stored in a "long", and we need
+					 * an out-of-band value.
+					 */
 /*
  * Nothing can live at region offset 0, because, in all cases, that's where
  * we store *something*.  Lots of code needs an out-of-band value for region
  * offsets, so we use 0.
  */
-#define INVALID_ROFF        0
+#define	INVALID_ROFF		0
 
 /* Reference describing system memory version of REGENV. */
 typedef struct __db_reg_env_ref {
-    roff_t     size;        /* Region size. */
-    long       segid;       /* UNIX shmget ID, VxWorks ID. */
+	roff_t	   size;		/* Region size. */
+	long	   segid;		/* UNIX shmget ID, VxWorks ID. */
 } REGENV_REF;
 
 /* Per-environment region information. */
 typedef struct __db_reg_env {
-    /*
-     * !!!
-     * The magic, panic, version, envid and signature fields of the region
-     * are fixed in size, the timestamp field is the first field which is
-     * variable length.  These fields must never change in order, to
-     * guarantee we can always read them, no matter what release we have.
-     *
-     * !!!
-     * The magic and panic fields are NOT protected by any mutex, and for
-     * this reason cannot be anything more complicated than zero/non-zero.
-     */
-    u_int32_t magic;        /* Valid region magic number. */
-    u_int32_t panic;        /* Environment is dead. */
+	/*
+	 * !!!
+	 * The magic, panic, version, envid and signature fields of the region
+	 * are fixed in size, the timestamp field is the first field which is
+	 * variable length.  These fields must never change in order, to
+	 * guarantee we can always read them, no matter what release we have.
+	 *
+	 * !!!
+	 * The magic and panic fields are NOT protected by any mutex, and for
+	 * this reason cannot be anything more complicated than zero/non-zero.
+	 */
+	u_int32_t magic;		/* Valid region magic number. */
+	u_int32_t panic;		/* Environment is dead. */
 
-    u_int32_t majver;       /* Major DB version number. */
-    u_int32_t minver;       /* Minor DB version number. */
-    u_int32_t patchver;     /* Patch DB version number. */
+	u_int32_t majver;		/* Major DB version number. */
+	u_int32_t minver;		/* Minor DB version number. */
+	u_int32_t patchver;		/* Patch DB version number. */
 
-    u_int32_t envid;        /* Unique environment ID. */
+	u_int32_t envid;		/* Unique environment ID. */
 
-    u_int32_t signature;        /* Structure signatures. */
+	u_int32_t signature;		/* Structure signatures. */
 
-    time_t    timestamp;        /* Creation time. */
+	time_t	  timestamp;		/* Creation time. */
 
-    u_int32_t init_flags;       /* Flags environment initialized with.*/
+	u_int32_t init_flags;		/* Flags environment initialized with.*/
 
-    /*
-     * The mtx_regenv mutex protects the environment reference count and
-     * memory allocation from the primary shared region (the crypto, thread
-     * control block and replication implementations allocate memory from
-     * the primary shared region).
-     *
-     * The rest of the fields are initialized at creation time, and don't
-     * need mutex protection.  The flags, op_timestamp and rep_timestamp
-     * fields are used by replication only and are protected by the
-     * replication mutex.  The rep_timestamp is is not protected when it
-     * is used in recovery as that is already single threaded.
-     */
-    db_mutex_t mtx_regenv;      /* Refcnt, region allocation mutex. */
-    u_int32_t  refcnt;      /* References to the environment. */
+	/*
+	 * The mtx_regenv mutex protects the environment reference count and
+	 * memory allocation from the primary shared region (the crypto, thread
+	 * control block and replication implementations allocate memory from
+	 * the primary shared region).
+	 *
+	 * The rest of the fields are initialized at creation time, and don't
+	 * need mutex protection.  The flags, op_timestamp and rep_timestamp
+	 * fields are used by replication only and are protected by the
+	 * replication mutex.  The rep_timestamp is is not protected when it
+	 * is used in recovery as that is already single threaded.
+	 */
+	db_mutex_t mtx_regenv;		/* Refcnt, region allocation mutex. */
+	u_int32_t  refcnt;		/* References to the environment. */
 
-    u_int32_t region_cnt;       /* Number of REGIONs. */
-    roff_t    region_off;       /* Offset of region array */
+	u_int32_t region_cnt;		/* Number of REGIONs. */
+	roff_t	  region_off;		/* Offset of region array */
 
-    roff_t    cipher_off;       /* Offset of cipher area */
+	roff_t	  cipher_off;		/* Offset of cipher area */
 
-    roff_t    thread_off;       /* Offset of the thread area. */
+	roff_t	  thread_off;		/* Offset of the thread area. */
 
-    roff_t    rep_off;      /* Offset of the replication area. */
-#define DB_REGENV_REPLOCKED 0x0001  /* Env locked for rep backup. */
-    u_int32_t flags;        /* Shared environment flags. */
-#define DB_REGENV_TIMEOUT   30  /* Backup timeout. */
-    time_t    op_timestamp;     /* Timestamp for operations. */
-    time_t    rep_timestamp;    /* Timestamp for rep db handles. */
-    u_int32_t reg_panic;        /* DB_REGISTER triggered panic */
-    uintmax_t unused;       /* The ALLOC_LAYOUT structure follows
-                     * the REGENV structure in memory and
-                     * contains uintmax_t fields.  Force
-                     * proper alignment of that structure.
-                     */
+	roff_t	  rep_off;		/* Offset of the replication area. */
+#define	DB_REGENV_REPLOCKED	0x0001	/* Env locked for rep backup. */
+	u_int32_t flags;		/* Shared environment flags. */
+#define	DB_REGENV_TIMEOUT	30	/* Backup timeout. */
+	time_t	  op_timestamp;		/* Timestamp for operations. */
+	time_t	  rep_timestamp;	/* Timestamp for rep db handles. */
+	u_int32_t reg_panic;		/* DB_REGISTER triggered panic */
+	uintmax_t unused;		/* The ALLOC_LAYOUT structure follows
+					 * the REGENV structure in memory and
+					 * contains uintmax_t fields.  Force
+					 * proper alignment of that structure.
+					 */
 } REGENV;
 
 /* Per-region shared region information. */
 typedef struct __db_region {
-    u_int32_t   id;     /* Region id. */
-    reg_type_t  type;       /* Region type. */
+	u_int32_t	id;		/* Region id. */
+	reg_type_t	type;		/* Region type. */
 
-    roff_t  size;           /* Region size in bytes. */
+	roff_t	size;			/* Region size in bytes. */
 
-    roff_t  primary;        /* Primary data structure offset. */
+	roff_t	primary;		/* Primary data structure offset. */
 
-    long    segid;          /* UNIX shmget(2), Win16 segment ID. */
+	long	segid;			/* UNIX shmget(2), Win16 segment ID. */
 } REGION;
 
 /*
  * Per-process/per-attachment information about a single region.
  */
-struct __db_reginfo_t {     /* __env_region_attach IN parameters. */
-    ENV    *env;        /* Enclosing environment. */
-    reg_type_t  type;       /* Region type. */
-    u_int32_t   id;         /* Region id. */
+struct __db_reginfo_t {		/* __env_region_attach IN parameters. */
+	ENV	   *env;		/* Enclosing environment. */
+	reg_type_t  type;		/* Region type. */
+	u_int32_t   id;			/* Region id. */
 
-                /* env_region_attach OUT parameters. */
-    REGION     *rp;         /* Shared region. */
+				/* env_region_attach OUT parameters. */
+	REGION	   *rp;			/* Shared region. */
 
-    char       *name;       /* Region file name. */
+	char	   *name;		/* Region file name. */
 
-    void       *addr;       /* Region address. */
-    void       *primary;        /* Primary data structure address. */
+	void	   *addr;		/* Region address. */
+	void	   *primary;		/* Primary data structure address. */
 
-    size_t      max_alloc;      /* Maximum bytes allocated. */
-    size_t      allocated;      /* Bytes allocated. */
+	size_t	    max_alloc;		/* Maximum bytes allocated. */
+	size_t	    allocated;		/* Bytes allocated. */
 
-    db_mutex_t  mtx_alloc;      /* number of mutex for allocation. */
+	db_mutex_t  mtx_alloc;		/* number of mutex for allocation. */
 
 #ifdef DB_WIN32
-    HANDLE  wnt_handle;     /* Win/NT HANDLE. */
+	HANDLE	wnt_handle;		/* Win/NT HANDLE. */
 #endif
 
-#define REGION_CREATE       0x01    /* Caller created region. */
-#define REGION_CREATE_OK    0x02    /* Caller willing to create region. */
-#define REGION_JOIN_OK      0x04    /* Caller is looking for a match. */
-    u_int32_t   flags;
+#define	REGION_CREATE		0x01	/* Caller created region. */
+#define	REGION_CREATE_OK	0x02	/* Caller willing to create region. */
+#define	REGION_JOIN_OK		0x04	/* Caller is looking for a match. */
+	u_int32_t   flags;
 };
 
 /*
- * R_ADDR   Return a per-process address for a shared region offset.
- * R_OFFSET Return a shared region offset for a per-process address.
+ * R_ADDR	Return a per-process address for a shared region offset.
+ * R_OFFSET	Return a shared region offset for a per-process address.
  */
-#define R_ADDR(reginfop, offset)                    \
-    (F_ISSET((reginfop)->env, ENV_PRIVATE) ?            \
-        (void *)(offset) :                      \
-        (void *)((u_int8_t *)((reginfop)->addr) + (offset)))
-#define R_OFFSET(reginfop, p)                       \
-    (F_ISSET((reginfop)->env, ENV_PRIVATE) ?            \
-        (roff_t)(p) :                       \
-        (roff_t)((u_int8_t *)(p) - (u_int8_t *)(reginfop)->addr))
+#define	R_ADDR(reginfop, offset)					\
+	(F_ISSET((reginfop)->env, ENV_PRIVATE) ?			\
+	    (void *)(offset) :						\
+	    (void *)((u_int8_t *)((reginfop)->addr) + (offset)))
+#define	R_OFFSET(reginfop, p)						\
+	(F_ISSET((reginfop)->env, ENV_PRIVATE) ?			\
+	    (roff_t)(p) :						\
+	    (roff_t)((u_int8_t *)(p) - (u_int8_t *)(reginfop)->addr))
 
 /*
  * PANIC_ISSET, PANIC_CHECK:
- *  Check to see if the DB environment is dead.
+ *	Check to see if the DB environment is dead.
  */
-#define PANIC_ISSET(env)                        \
-    ((env) != NULL && (env)->reginfo != NULL &&         \
-        ((REGENV *)(env)->reginfo->primary)->panic != 0 &&      \
-        !F_ISSET((env)->dbenv, DB_ENV_NOPANIC))
+#define	PANIC_ISSET(env)						\
+	((env) != NULL && (env)->reginfo != NULL &&			\
+	    ((REGENV *)(env)->reginfo->primary)->panic != 0 &&		\
+	    !F_ISSET((env)->dbenv, DB_ENV_NOPANIC))
 
-#define PANIC_CHECK(env)                        \
-    if (PANIC_ISSET(env))                       \
-        return (__env_panic_msg(env));
+#define	PANIC_CHECK(env)						\
+	if (PANIC_ISSET(env))						\
+		return (__env_panic_msg(env));
 
 #if defined(__cplusplus)
 }

@@ -1,6 +1,6 @@
 /* DO NOT EDIT: automatically built by dist/s_include. */
-#ifndef _dbreg_ext_h_
-#define _dbreg_ext_h_
+#ifndef	_dbreg_ext_h_
+#define	_dbreg_ext_h_
 
 #if defined(__cplusplus)
 extern "C" {

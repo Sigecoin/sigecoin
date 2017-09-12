@@ -1,6 +1,6 @@
 /* DO NOT EDIT: automatically built by dist/s_include. */
-#ifndef _btree_ext_h_
-#define _btree_ext_h_
+#ifndef	_btree_ext_h_
+#define	_btree_ext_h_
 
 #if defined(__cplusplus)
 extern "C" {
