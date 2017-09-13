@@ -109,3 +109,19 @@ Without GUI, fullnode, cli, tx, tests.
   make
 
 * bench, sigenode, sigenode-cli, sigenode-tx, tests executables and static libraries should be compiled in .build directory
+
+Ubuntu (12.0+)
+With GUI, with sigecoint_qt_test
+--------------------------------
+
+* Additionally download/install following:
+  sudo apt install qt5-default
+  sudo apt-get install libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler
+
+* if you have a custom static built QT, so remove from bash profile $QTDIR environment and path to LD_LIBRARY_PATH if it exists
+* modify sigecoin/CMakeLists.txt this variable:
+  else (WIN32)
+    set (SIGE_GUI ON CACHE BOOL "")
+* do start ./unix_build.sh when go to .build folder, run "make" or "make -j<number_of_processor_cores>" to force more quickly compilation
+.
+-----------------------------------------

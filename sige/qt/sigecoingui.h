@@ -5,10 +5,7 @@
 #ifndef SIGE_QT_SIGECOINGUI_H
 #define SIGE_QT_SIGECOINGUI_H
 
-#if defined(HAVE_CONFIG_H)
-#include "config/sigconfig.h"
-#endif
-
+#include "config/sigeconfig.h"
 #include "amount.h"
 
 #include <QLabel>

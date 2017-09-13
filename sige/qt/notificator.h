@@ -5,9 +5,7 @@
 #ifndef SIGE_QT_NOTIFICATOR_H
 #define SIGE_QT_NOTIFICATOR_H
 
-#if defined(HAVE_CONFIG_H)
-#include "config/sigconfig.h"
-#endif
+#include "config/sigeconfig.h"
 
 #include <QIcon>
 #include <QObject>
